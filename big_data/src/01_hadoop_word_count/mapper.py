@@ -20,4 +20,4 @@ for line in sys.stdin:
         for f in FILTER:
             word = word.replace(f, '')
         if word and not word.startswith('http'):
-            print(word.lower() + ' 1')
+            print(word.lower() + '\t1')
