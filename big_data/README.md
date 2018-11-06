@@ -18,11 +18,11 @@ To test the code in a Hadoop environment based on the [Hadoop Python streaming D
 * Run the Docker container (the Docker image will be automatically pulled if it does not already in the system): `docker run -it sequenceiq/hadoop-docker /etc/bootstrap.sh -bash`
 * Download the Streamer code: `curl -O http://central.maven.org/maven2/org/apache/hadoop/hadoop-streaming/2.7.3/hadoop-streaming-2.7.3.jar` 
 * Copy files to the Docker container from the host machine: `docker cp src/01_hadoop_word_count/mapper.py [CONTAINER_ID]:/usr/local/hadoop`, `docker cp src/01_hadoop_word_count/reducer.py [CONTAINER_ID]:/usr/local/hadoop`, `docker cp data/01_hadoop_word_count/book.txt [CONTAINER_ID]:/usr/local/hadoop`
-* In the Docker container, copy the data to HDFS: `/usr/local/hadoop/bin/hdfs dfs -put /usr/local/hadoop/book.txt input/`
+* In the Docker container, copy the data to HDFS: `/usr/local/hadoop/bin/hdfs dfs -mkdir  data/` and `/usr/local/hadoop/bin/hdfs dfs -put /usr/local/hadoop/book.txt data/`
 * Make sure that the output directory is deleted before running the MapReduce job, if that directory already exists: `/usr/local/hadoop/bin/hdfs dfs -rm -r output`
 
 * Finally, launch the MapReduce job:
 
 ```
-/usr/local/hadoop/bin/hadoop jar hadoop-streaming-2.7.3.jar -file /usr/local/hadoop/mapper.py -mapper /usr/local/hadoop/mapper.py -file /usr/local/hadoop/reducer.py -reducer /usr/local/hadoop/reducer.py -input book.txt -output output
-```
+/usr/local/hadoop/bin/hadoop jar hadoop-streaming-2.7.3.jar -file /usr/local/hadoop/mapper.py -mapper /usr/local/hadoop/mapper.py -file /usr/local/hadoop/reducer.py -reducer /usr/local/hadoop/reducer.py -input data/book.txt -output output
+``

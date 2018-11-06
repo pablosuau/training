@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 
 record = sys.stdin.readline()
