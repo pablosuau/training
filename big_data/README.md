@@ -32,5 +32,5 @@ To test the code in a Hadoop environment based on the [Hadoop Python streaming D
 Based on the [NASA-HTTP dataset](http://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html). The data is stored in the repository in compressed format. In order to use it:
 
 ```
-gzip -d data/02_hadoop_top_k/NASA_access_log_Jul95.gz
+gzip -dk data/02_hadoop_top_k/NASA_access_log_Jul95.gz
 ```
