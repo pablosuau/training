@@ -34,3 +34,13 @@ Based on the [NASA-HTTP dataset](http://ita.ee.lbl.gov/html/contrib/NASA-HTTP.ht
 ```
 gzip -dk data/02_hadoop_top_k/NASA_access_log_Jul95.gz
 ```
+
+This jobs requires two chained MapReduce jobs. The first one is a usual word counter, whereas the second one sorts and extracts the URLs with the highest visit counts. This can be simulated from the command line as:
+
+```
+cat data/02_hadoop_top_k/NASA_access_log_Jul95 | python src/02_hadoop_top_k/mapper_1.py | sort | python src/02_hadoop_top_k/reducer_1.py | python src/02_hadoop_top_k/mapper_2.py | sort -n | python src/02_hadoop_top_k/reducer_2.py
+```
+
+In terms of running this on Hadoop, we need to use the following command from the Docker image described for the first exercise:
+
+
