@@ -2,10 +2,10 @@
 
 import sys
 
-records = []
+i = 0
 for line in sys.stdin:
     fields = line.split('\t')
-    records.append(fields[1].replace('\n', '') + '\t' + fields[0])
+    if i < 10:
+       print(fields[1].replace('\n', '') + '\t' + fields[0])
+    i = i + 1
 
-for i in range(10):
-    print(records[len(records) - i - 1])

@@ -38,9 +38,31 @@ gzip -dk data/02_hadoop_top_k/NASA_access_log_Jul95.gz
 This jobs requires two chained MapReduce jobs. The first one is a usual word counter, whereas the second one sorts and extracts the URLs with the highest visit counts. This can be simulated from the command line as:
 
 ```
-cat data/02_hadoop_top_k/NASA_access_log_Jul95 | python src/02_hadoop_top_k/mapper_1.py | sort | python src/02_hadoop_top_k/reducer_1.py | python src/02_hadoop_top_k/mapper_2.py | sort -n | python src/02_hadoop_top_k/reducer_2.py
+cat data/02_hadoop_top_k/NASA_access_log_Jul95 | python src/02_hadoop_top_k/mapper_1.py | sort | python src/02_hadoop_top_k/reducer_1.py | python src/02_hadoop_top_k/mapper_2.py | sort -n -r | python src/02_hadoop_top_k/reducer_2.py
 ```
 
 In terms of running this on Hadoop, we need to use the following command from the Docker image described for the first exercise:
 
+Establishing the number of reducers:
 
+$HADOOP_HOME/bin/hadoop  jar $HADOOP_HOME/hadoop-streaming.jar \
+    -D mapred.reduce.tasks=2 \
+    -input myInputDirs \
+    -output myOutputDir \
+    -mapper org.apache.hadoop.mapred.lib.IdentityMapper \
+    -reducer /bin/wc 
+
+Hadoop has a library class, KeyFieldBasedComparator, that is useful for many applications. This class provides a subset of features provided by the Unix/GNU Sort. For example:
+
+$HADOOP_HOME/bin/hadoop  jar $HADOOP_HOME/hadoop-streaming.jar \
+    -D mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator \
+    -D stream.map.output.field.separator=. \
+    -D stream.num.map.output.key.fields=4 \
+    -D map.output.key.field.separator=. \
+    -D mapred.text.key.comparator.options=-k2,2nr \
+    -D mapred.reduce.tasks=12 \
+    -input myInputDirs \
+    -output myOutputDir \
+    -mapper org.apache.hadoop.mapred.lib.IdentityMapper \
+    -reducer org.apache.hadoop.mapred.lib.IdentityReducer 
+The map output keys of the above Map/Reduce job normally have four fields separated by ".". However, the Map/Reduce framework will sort the outputs by the second field of the keys using the -D mapred.text.key.comparator.options=-k2,2nr option. Here, -n specifies that the sorting is numerical sorting and -r specifies that the result should be reversed
