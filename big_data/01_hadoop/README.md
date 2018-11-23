@@ -37,6 +37,9 @@ To test the code in a Hadoop environment based on the [Hadoop Python streaming D
 
 ## 02_hadoop_top_k
 
+[[code]](src/02_hadoop_top_k/)
+[[data]](data/02_hadoop_top_k/)
+
 The aim of this job is to produce a list with the top 10 visiting URLs according to the [NASA-HTTP log dataset](http://ita.ee.lbl.gov/html/contrib/NASA-HTTP.html). The data is stored in compressed format in the repository:
 
 ```
