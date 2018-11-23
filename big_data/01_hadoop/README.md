@@ -10,7 +10,9 @@ A classical word count example implemented for Hadoop's MapReduce. The code coun
 To run the code locally:
 
 ```
-cat data/01_hadoop_word_count/book.txt | python src/01_hadoop_word_count/mapper.py | sort | python src/01_hadoop_word_count/reducer.py
+cat data/01_hadoop_word_count/book.txt | \
+   python src/01_hadoop_word_count/mapper.py | \
+   sort | python src/01_hadoop_word_count/reducer.py
 ```
 
 To test the code in a Hadoop environment based on the [Hadoop Python streaming Docker image](https://github.com/audip/hadoop-python-streaming):
@@ -24,7 +26,13 @@ To test the code in a Hadoop environment based on the [Hadoop Python streaming D
 * Finally, launch the MapReduce job:
 
 ```
-/usr/local/hadoop/bin/hadoop jar hadoop-streaming-2.7.3.jar -file /usr/local/hadoop/mapper.py -mapper /usr/local/hadoop/mapper.py -file /usr/local/hadoop/reducer.py -reducer /usr/local/hadoop/reducer.py -input data/book.txt -output output
+/usr/local/hadoop/bin/hadoop jar hadoop-streaming-2.7.3.jar \
+   -file /usr/local/hadoop/mapper.py \
+   -mapper /usr/local/hadoop/mapper.py \
+   -file /usr/local/hadoop/reducer.py \
+   -reducer /usr/local/hadoop/reducer.py \
+   -input data/book.txt \
+   -output output
 ```
 
 ## 02_hadoop_top_k
@@ -38,7 +46,11 @@ gzip -dk data/02_hadoop_top_k/NASA_access_log_Jul95.gz
 This job requires two chained MapReduce jobs. The first one is a usual word counter, whereas the second one sorts and extracts the URLs with the highest visit counts. This can be simulated from the command line as:
 
 ```
-cat data/02_hadoop_top_k/NASA_access_log_Jul95 | python src/02_hadoop_top_k/mapper_1.py | sort | python src/02_hadoop_top_k/reducer_1.py | python src/02_hadoop_top_k/mapper_2.py | sort -n -r | python src/02_hadoop_top_k/reducer_2.py
+cat data/02_hadoop_top_k/NASA_access_log_Jul95 | \
+   python src/02_hadoop_top_k/mapper_1.py | \
+   sort | python src/02_hadoop_top_k/reducer_1.py | \
+   python src/02_hadoop_top_k/mapper_2.py | \
+   sort -n -r | python src/02_hadoop_top_k/reducer_2.py
 ```
 
 *Note*: the first mapper raises an `UnicodeDecodeError` exception in Python 3. We still obtain a result, but this differs from the result obtained in Python 2. The Docker container uses Python 2.
@@ -54,11 +66,26 @@ We prepare the running environment similarly to what we did for the first job:
 Once the environment is ready, we can run the two MapReduce jobs. The first one is a simple word counter that counts the number of requests coming from each URL:
 
 ```
-usr/local/hadoop/bin/hadoop jar hadoop-streaming-2.7.3.jar -file /usr/local/hadoop/mapper_1.py -mapper /usr/local/hadoop/mapper_1.py -file /usr/local/hadoop/reducer_1.py -reducer /usr/local/hadoop/reducer_1.py -input data/NASA_access_log_Jul95 -output output
+usr/local/hadoop/bin/hadoop jar hadoop-streaming-2.7.3.jar \
+   -file /usr/local/hadoop/mapper_1.py \
+   -mapper /usr/local/hadoop/mapper_1.py \
+   -file /usr/local/hadoop/reducer_1.py \
+   -reducer /usr/local/hadoop/reducer_1.py \
+   -input data/NASA_access_log_Jul95 \
+   -output output
 ```
 
 The second MapReduce job takes the output from the first one as its input. The mapper simply switches the key and values, so then we can use a comparator to sort the records numerically and in descending order by the number of requests. A single reducer is used. Its only task is to print the 10 first received records from the shuffle process.
 
 ```
-/usr/local/hadoop/bin/hadoop jar hadoop-streaming-2.7.3.jar -D mapred.reduce.tasks=1 -D mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator -D mapred.text.key.comparator.options=-nr -file /usr/local/hadoop/mapper_2.py -mapper /usr/local/hadoop/mapper_2.py -file /usr/local/hadoop/reducer_2.py -reducer /usr/local/hadoop/reducer_2.py -input output -output output2
+/usr/local/hadoop/bin/hadoop jar hadoop-streaming-2.7.3.jar \
+   -D mapred.reduce.tasks=1 \
+   -D mapred.output.key.comparator.class=org.apache.hadoop.mapred.lib.KeyFieldBasedComparator \
+   -D mapred.text.key.comparator.options=-nr \
+   -file /usr/local/hadoop/mapper_2.py \
+   -mapper /usr/local/hadoop/mapper_2.py \
+   -file /usr/local/hadoop/reducer_2.py \
+   -reducer /usr/local/hadoop/reducer_2.py \
+   -input output \
+   -output output2
 ```
