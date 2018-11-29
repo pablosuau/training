@@ -1,4 +1,4 @@
-This folder contains code I created to practice concepts related to big data tools such as Hadoop and Spark. Both the `data/` and `src/` folders are split into subfolders corresponding to different subprojects. 
+This folder contains code I created to practice concepts related to Hadoop. Both the `data/` and `src/` folders are split into subfolders corresponding to different subprojects. 
 
 ## 01_hadoop_word_count
 
