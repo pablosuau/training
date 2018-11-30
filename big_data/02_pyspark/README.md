@@ -3,7 +3,7 @@ This folder contains small exercises I wrote to practice pyspark concepts.
 All the notebooks in this folder can be executed from within the following Docker container (the Docker image will be pulled into our system if we did not download it yet):
 
 ```
-docker run -it --rm -p 8888:8888 $(pwd):/home/jovyan/work/ jupyter/pyspark-notebook
+docker run -it --rm -p 8888:8888 -v $(pwd):/home/jovyan/work/ jupyter/pyspark-notebook
 ```
 
 If we run the command above from the directory in which this README.md file is located we will be able to access all the pyspark notebooks from the `work` directory in the container.
