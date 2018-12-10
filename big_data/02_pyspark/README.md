@@ -10,4 +10,4 @@ If we run the command above from the directory in which this README.md file is l
 
 The notebooks in this folder run Spark jobs locally. Since the Docker container above does not generate a local Spark infrastructure, we can only execute these jobs in development mode, that is, within a [single JVM process](https://stackoverflow.com/questions/39986507/spark-standalone-configuration-having-multiple-executors). Therefore, there is no real multiprocessing. This fact does not have an effect on the real purpose of these notebookes: to practice pyspark coding. 
 
-In terms of data, I am using the [Google Play dataset provided by Kaggle](https://www.kaggle.com/lava18/google-play-store-apps). The data is stored in the `data/` folder.
+In terms of data, I am using [Kaggle's Google Play dataset](https://www.kaggle.com/lava18/google-play-store-apps) and [Kaggle's Students Performance dataset](https://www.kaggle.com/spscientist/students-performance-in-exams). Both datasets are stored in the `data/` folder.
