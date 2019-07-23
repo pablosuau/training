@@ -5,7 +5,7 @@ This directory contains the code for my submissions to the Titanic Kaggle compet
 | kNN                 | Forward selection                    | 79.90%   | [04_knn](04_knn.ipynb) |
 | Logistic Regression | Forward selection                    | 75.12%   | [02_logistic_regression](02_logistic_regression.ipynb) |
 | Logistic Regression | Forward selection and regularisation | 75.12%   | [02_logistic_regression](02_logistic_regression.ipynb) |
-| KNN                 | Backward elimination                 | 75.12%   | [04_knn](04_knn.ipynb) |
+| kNN                 | Backward elimination                 | 75.12%   | [04_knn](04_knn.ipynb) |
 | 1NN Mahalanobis     | Forward selection                    | 74.16%   | [03_mahalanobis](03_mahalanobis.ipynb) |
 | Logistic Regression | Backward elimination                 | 73.21%   | [02_logistic_regression](02_logistic_regression.ipynb) |
 | Logistic Regression |                                      | 72.72%   | [02_logistic_regression](02_logistic_regression.ipynb) |
