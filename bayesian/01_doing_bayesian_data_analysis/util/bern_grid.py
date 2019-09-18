@@ -48,9 +48,10 @@ def bern_grid(theta, p_theta, data, plot_type, show_cent_tend, show_hdi, hdi_mas
     # 1 x 3 panels
     fig, ax = plt.subplots(1, 3)
     fig.set_figwidth(16)
+    fig.set_figheight(2)
     # Initialise plot type
     dot_size = 5 # how big to make the plotted dots
-    bar_size = 0.1 # how wide to make the bar lines    
+    bar_size = 0.01 # how wide to make the bar lines    
     # If the comb has a zillion teeth, it's too many to plot, so plot only a
     # thinned out subset of the teeth.
     n_teeth = len(theta.tolist())
@@ -92,13 +93,13 @@ def bern_grid(theta, p_theta, data, plot_type, show_cent_tend, show_hdi, hdi_mas
     # Mark the highest density interval. HDI points are not thinned in the plot
     if (show_hdi):
         [indexes, mass, height] = hdi_of_grid(p_theta, hdi_mass)
-        ax[0].plot(theta[indexes], np.repeat(height, len(indexes.tolist())), 'r--')
         text = '{0:.2f}% HDI'.format(100 * mass)
         ax[0].text(np.mean(theta[indexes]), 
-                   1.3 * height, 
+                   height, 
                    text, 
                    fontsize = 14, 
-                   horizontalalignment = 'center')
+                   horizontalalignment = 'center',
+                   verticalalignment = 'bottom')
         # Mark the left and right ends of the waterline
         # Find indices at ends of sub-intervals
         in_lim = [indexes[0]] # first point
@@ -107,10 +108,11 @@ def bern_grid(theta, p_theta, data, plot_type, show_cent_tend, show_hdi, hdi_mas
                 in_lim.append(indexes[idx]) # include idx
         in_lim.append(indexes[-1]) # last point
         # Mark vertical lines at ends of sub-intervals
-        for idx in in_lim:
+        for i in range(len(in_lim)):
+            idx = in_lim[i]
             ax[0].plot([theta[idx], theta[idx]], [0, height], 'r--', linewidth = 1.5)
-            text = '{0:.2f}'.format(theta[idx])
-            ax[0].text(theta[idx], 1.1 * height, text, fontsize = 14, horizontalalignment = 'center')
+            if i % 2 == 0:
+                ax[0].plot([theta[idx], theta[in_lim[i + 1]]], np.repeat(height, 2), 'r--')
 
     # Plot the likelihood: p(Data|Theta)
     if plot_type == 'bars':
@@ -183,13 +185,13 @@ def bern_grid(theta, p_theta, data, plot_type, show_cent_tend, show_hdi, hdi_mas
     # Mark the highest density interval. HDI points are not thinned in the plot
     if (show_hdi):
         [indexes, mass, height] = hdi_of_grid(p_theta_given_data, hdi_mass)
-        ax[2].plot(theta[indexes], np.repeat(height, len(indexes.tolist())), 'r--')
         text = '{0:.2f}% HDI'.format(100 * mass)
         ax[2].text(np.mean(theta[indexes]), 
-                   1.3 * height, 
+                   height, 
                    text, 
                    fontsize = 14, 
-                   horizontalalignment = 'center')
+                   horizontalalignment = 'center',
+                   verticalalignment = 'bottom')
         # Mark the left and right ends of the waterline
         # Find indices at ends of sub-intervals
         in_lim = [indexes[0]] # first point
@@ -198,9 +200,10 @@ def bern_grid(theta, p_theta, data, plot_type, show_cent_tend, show_hdi, hdi_mas
                 in_lim.append(indexes[idx]) # include idx
         in_lim.append(indexes[-1]) # last point
         # Mark vertical lines at ends of sub-intervals
-        for idx in in_lim:
+        for i in range(len(in_lim)):
+            idx = in_lim[i]
             ax[2].plot([theta[idx], theta[idx]], [0, height], 'r--', linewidth = 1.5)
-            text = '{0:.2f}'.format(theta[idx])
-            ax[2].text(theta[idx], 1.1 * height, text, fontsize = 14, horizontalalignment = 'center')
+            if i % 2 == 0:
+                ax[2].plot([theta[idx], theta[in_lim[i + 1]]], np.repeat(height, 2), 'r--')
 
     return p_theta_given_data
