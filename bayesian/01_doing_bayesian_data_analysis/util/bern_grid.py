@@ -150,8 +150,8 @@ def bern_grid(theta, p_theta, data, plot_type, show_cent_tend, show_hdi, hdi_mas
         ax[2].plot(theta[thin_idx], p_theta_given_data[thin_idx], 'o', markersize = dot_size)
     ax[2].set_xticks(theta[thin_idx])
     ax[2].set_xlabel('theta')
-    ax[2].set_ylabel('p(D|theta)')
-    ax[2].set_title('likelihood')   
+    ax[2].set_ylabel('p(theta|D)')
+    ax[2].set_title('posterior')   
     if show_cent_tend != 'none':
         if show_cent_tend == 'mean':
             mean_theta = np.sum(theta * p_theta_given_data)
