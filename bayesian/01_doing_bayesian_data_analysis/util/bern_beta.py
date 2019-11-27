@@ -2,6 +2,7 @@ import numpy as np
 from scipy.stats import beta
 from scipy.special import betaln
 import matplotlib.pyplot as plt
+from dbda2e_utilities import hdi_of_icdf
 
 def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass = 0.95, show_p_d = False):
     '''
@@ -46,7 +47,6 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
     # Using data transformation to preven underflow errors for large a, b values
     p_data = np.exp(betaln(z + 1, n - z + b) - betaln(a, b))
 
-
     # Plot the results
     # 1 x 3 panels
     fig, ax = plt.subplots(1, 3)
@@ -90,27 +90,28 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
 
     # Mark the highest density interval. HDI points are not thinned in the plot
     if (show_hdi):
-        [indexes, mass, height] = hdi_of_grid(p_theta, hdi_mass)
-        text = '{0:.2f}% HDI'.format(100 * mass)
-        ax[0].text(np.mean(theta[indexes]), 
-                   height, 
-                   text, 
-                   fontsize = 14, 
-                   horizontalalignment = 'center',
-                   verticalalignment = 'bottom')
-        # Mark the left and right ends of the waterline
-        # Find indices at ends of sub-intervals
-        in_lim = [indexes[0]] # first point
-        for idx in range(1, len(indexes) - 1):
-            if indexes[idx] != indexes[idx - 1] + 1 or indexes[idx] != indexes[idx + 1] - 1:
-                in_lim.append(indexes[idx]) # include idx
-        in_lim.append(indexes[-1]) # last point
-        # Mark vertical lines at ends of sub-intervals
-        for i in range(len(in_lim)):
-            idx = in_lim[i]
-            ax[0].plot([theta[idx], theta[idx]], [0, height], 'r--', linewidth = 1.5)
-            if i % 2 == 0:
-                ax[0].plot([theta[idx], theta[in_lim[i + 1]]], np.repeat(height, 2), 'r--')
+        if (a + b - 2 > 0):
+            hdi_info = hdi_of_icdf(beta, cred_mass = hdi_mass, a = a, b = b)
+            text = '{0:.2f}% HDI'.format(100 * mass)
+            ax[0].text(np.mean(theta[indexes]), 
+                       height, 
+                       text, 
+                       fontsize = 14, 
+                       horizontalalignment = 'center',
+                       verticalalignment = 'bottom')
+            # Mark the left and right ends of the waterline
+            # Find indices at ends of sub-intervals
+            in_lim = [indexes[0]] # first point
+            for idx in range(1, len(indexes) - 1):
+                if indexes[idx] != indexes[idx - 1] + 1 or indexes[idx] != indexes[idx + 1] - 1:
+                    in_lim.append(indexes[idx]) # include idx
+            in_lim.append(indexes[-1]) # last point
+            # Mark vertical lines at ends of sub-intervals
+            for i in range(len(in_lim)):
+                idx = in_lim[i]
+                ax[0].plot([theta[idx], theta[idx]], [0, height], 'r--', linewidth = 1.5)
+                if i % 2 == 0:
+                    ax[0].plot([theta[idx], theta[in_lim[i + 1]]], np.repeat(height, 2), 'r--')
 
   ## Mark the ROPE
   #if ( !is.null(ROPE) ) {
