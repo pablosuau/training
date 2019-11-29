@@ -4,7 +4,7 @@ from scipy.special import betaln
 import matplotlib.pyplot as plt
 from dbda2e_utilities import hdi_of_icdf
 
-def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass = 0.95, show_p_d = False):
+def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass = 0.95, show_pd = False):
     '''
     Updates the shape parameters of a Beta distribution (posterior) based on a prior beta and a 
     set of observations - coin tosses. The calculation was derived analytically by taking advantage
@@ -92,26 +92,19 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
     if (show_hdi):
         if (a + b - 2 > 0):
             hdi_info = hdi_of_icdf(beta, cred_mass = hdi_mass, a = a, b = b)
-            text = '{0:.2f}% HDI'.format(100 * mass)
-            ax[0].text(np.mean(theta[indexes]), 
-                       height, 
+            hdi_height = np.mean([beta.pdf(hdi_info[0], a, b), 
+                                  beta.pdf(hdi_info[1], a, b)])
+            text = '{0:.2f}% HDI'.format(100 * hdi_mass)
+            ax[0].text(np.mean(hdi_info), 
+                       hdi_height, 
                        text, 
                        fontsize = 14, 
                        horizontalalignment = 'center',
                        verticalalignment = 'bottom')
             # Mark the left and right ends of the waterline
-            # Find indices at ends of sub-intervals
-            in_lim = [indexes[0]] # first point
-            for idx in range(1, len(indexes) - 1):
-                if indexes[idx] != indexes[idx - 1] + 1 or indexes[idx] != indexes[idx + 1] - 1:
-                    in_lim.append(indexes[idx]) # include idx
-            in_lim.append(indexes[-1]) # last point
-            # Mark vertical lines at ends of sub-intervals
-            for i in range(len(in_lim)):
-                idx = in_lim[i]
-                ax[0].plot([theta[idx], theta[idx]], [0, height], 'r--', linewidth = 1.5)
-                if i % 2 == 0:
-                    ax[0].plot([theta[idx], theta[in_lim[i + 1]]], np.repeat(height, 2), 'r--')
+            ax[0].plot(hdi_info, np.repeat(hdi_height, 2), 'r--')
+            ax[0].plot(np.repeat(hdi_info[0], 2), [0, hdi_height], 'r--', linewidth = 1.5)
+            ax[0].plot(np.repeat(hdi_info[1], 2), [0, hdi_height], 'r--', linewidth = 1.5)
 
   ## Mark the ROPE
   #if ( !is.null(ROPE) ) {
@@ -159,13 +152,12 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
     ax[1].set_xticks(x_ticks[np.round(np.linspace(0, len(x_ticks) - 1, 21)).astype(int)])
     ax[1].tick_params(rotation = 90)
   
-
     # Plot the posterior
     if plot_type == 'bars':
-        ax[2].bar(theta[thin_idx], p_theta_given_data[thin_idx], width = bar_size)
+        ax[2].bar(theta, p_theta_given_data, width = bar_size)
     if plot_type == 'points':
-        ax[2].plot(theta[thin_idx], p_theta_given_data[thin_idx], 'o', markersize = dot_size)
-    ax[2].set_xticks(theta[thin_idx])
+        ax[2].plot(theta, p_theta_given_data, 'o', markersize = dot_size)
+    ax[2].set_xticks(theta)
     ax[2].set_xlabel('theta')
     ax[2].set_ylabel('p(theta|D)')
     ax[2].set_title('posterior')  
@@ -202,27 +194,21 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
 
     # Mark the highest density interval. HDI points are not thinned in the plot
     if (show_hdi):
-        [indexes, mass, height] = hdi_of_grid(p_theta_given_data, hdi_mass)
-        text = '{0:.2f}% HDI'.format(100 * mass)
-        ax[2].text(np.mean(theta[indexes]), 
-                   height, 
-                   text, 
-                   fontsize = 14, 
-                   horizontalalignment = 'center',
-                   verticalalignment = 'bottom')
-        # Mark the left and right ends of the waterline
-        # Find indices at ends of sub-intervals
-        in_lim = [indexes[0]] # first point
-        for idx in range(1, len(indexes) - 1):
-            if indexes[idx] != indexes[idx - 1] + 1 or indexes[idx] != indexes[idx + 1] - 1:
-                in_lim.append(indexes[idx]) # include idx
-        in_lim.append(indexes[-1]) # last point
-        # Mark vertical lines at ends of sub-intervals
-        for i in range(len(in_lim)):
-            idx = in_lim[i]
-            ax[2].plot([theta[idx], theta[idx]], [0, height], 'r--', linewidth = 1.5)
-            if i % 2 == 0:
-                ax[2].plot([theta[idx], theta[in_lim[i + 1]]], np.repeat(height, 2), 'r--')
+        if (a + b + n - 2 > 0):
+            hdi_info = hdi_of_icdf(beta, cred_mass = hdi_mass, a = a + z, b = b + n - z)
+            hdi_height = np.mean([beta.pdf(hdi_info[0], a + z, b + n - z), 
+                                  beta.pdf(hdi_info[1], a + z, b + n - z)])
+            text = '{0:.2f}% HDI'.format(100 * hdi_mass)
+            ax[2].text(np.mean(hdi_info), 
+                       hdi_height, 
+                       text, 
+                       fontsize = 14, 
+                       horizontalalignment = 'center',
+                       verticalalignment = 'bottom')
+            # Mark the left and right ends of the waterline
+            ax[2].plot(hdi_info, np.repeat(hdi_height, 2), 'r--')
+            ax[2].plot(np.repeat(hdi_info[0], 2), [0, hdi_height], 'r--', linewidth = 1.5)
+            ax[2].plot(np.repeat(hdi_info[1], 2), [0, hdi_height], 'r--', linewidth = 1.5)
 
   ## Mark the ROPE
   #if ( !is.null(ROPE) ) {
@@ -239,4 +225,4 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
   #        adj=c(0.5,-0.15) , cex=1.2 , col=ropeCol )    
   #}
   
-    return [a + z, b + N - z]
+    return [a + z, b + n - z]

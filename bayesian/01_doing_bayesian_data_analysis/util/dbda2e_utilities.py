@@ -16,7 +16,7 @@ def hdi_of_icdf(icdf_name, cred_mass = 0.95, tol = 1e-8, **args):
         - A list with the HDI limits
     '''
     # freeze distribution with given arguments
-    distri = dist_name(**args)
+    distri = icdf_name(**args)
     # initial guess for HDIlowTailPr
     incred_mass =  1.0 - cred_mass
 
