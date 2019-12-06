@@ -38,7 +38,7 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
     z = np.sum(data) # Number of 1's in data
     n = len(data.tolist())
 
-    theta = np.arange(0.001, 0.999, 0.001) # Points for plotting
+    theta = np.arange(0.001, 1, 0.001) # Points for plotting
     p_theta = beta.pdf(theta, a, b) # Prior for plotting
     p_theta_given_data = beta.pdf(theta, a + z, b + n - z) # Posterior for plotting
     p_data_given_theta = np.power(theta, z) * np.power(1 - theta, n - z) # likelihood for plotting
