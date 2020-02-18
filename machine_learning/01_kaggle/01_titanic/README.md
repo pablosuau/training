@@ -3,6 +3,9 @@ This directory contains the code for my submissions to the Titanic Kaggle compet
 | Algorithm           | Extra                                | Accuracy | Notebook |
 |---------------------|--------------------------------------|----------|----------|
 | kNN                 | Forward selection                    | 79.90%   | [04_knn](04_knn.ipynb) |
+| SVM                 |                                      | 78.95%   | [05_svm](05_svm.ipynb) |
+| SVM                 | Backward elimination                 | 78.95%   | [05_svm](05_svm.ipynb) |
+| SVM                 | Forward selection                    | 76.55%   | [05_svm](05_svm.ipynb) |
 | Logistic Regression | Forward selection                    | 75.12%   | [02_logistic_regression](02_logistic_regression.ipynb) |
 | Logistic Regression | Forward selection and regularisation | 75.12%   | [02_logistic_regression](02_logistic_regression.ipynb) |
 | kNN                 | Backward elimination                 | 75.12%   | [04_knn](04_knn.ipynb) |
