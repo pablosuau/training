@@ -141,9 +141,9 @@ def plot_post(param_sample_vec,
                        'p_gt_comp_val',
                        'rope_low',
                        'rope_high',
-                       'pLtROPE', 
-                       'pInROPE',
-                       'pGtROPE']
+                       'p_lt_rope', 
+                       'p_in_rope',
+                       'p_gt_rope']
   post_summary = dict((k, None) for k in summary_col_names)
 
   
@@ -193,78 +193,61 @@ def plot_post(param_sample_vec,
   ax.set_ylabel(ylab)
   ax.set_xlim(xlim)
 
-
-  print(post_summary)
-  '''
-  
-
-  cenTendHt = 0.9*max(histinfo$density)
-  cvHt = 0.7*max(histinfo$density)
-  ROPEtextHt = 0.55*max(histinfo$density)
+  cen_tend_ht = 0.9 * max(histinfo)
+  cv_ht = 0.7 * max(histinfo)
+  rope_text_ht = 0.55 * max(histinfo)
   # Display central tendency:
-  mn = mean(paramSampleVec)
-  med = median(paramSampleVec)
-  mcmcDensity = density(paramSampleVec)
-  mo = mcmcDensity$x[which.max(mcmcDensity$y)]
-  if ( cenTend=="mode" ){ 
-    text( mo , cenTendHt ,
-          bquote(mode==.(signif(mo,3))) , adj=c(.5,0) ,  )
-  }
-  if ( cenTend=="median" ){ 
-    text( med , cenTendHt ,
-          bquote(median==.(signif(med,3))) , adj=c(.5,0) , , col=cvCol )
-  }
-  if ( cenTend=="mean" ){ 
-    text( mn , cenTendHt ,
-          bquote(mean==.(signif(mn,3))) , adj=c(.5,0) , )
-  }
+  mn = np.mean(param_sample_vec)
+  med = np.median(param_sample_vec)
+  mcmc_density = gaussian_kde(param_sample_vec)
+  mo = post_summary['mode']
+  if cen_tend == 'mode':
+    ax.text(mo, cen_tend_ht, 'mode = ' + str(round(mo, 3)), ha = 'center')
+  if cen_tend == 'median':
+    ax.text(med, cen_tend_ht, 'median = ' + str(round(med, 3)), ha = 'center')
+  if cen_tend == 'mean':
+    ax.text(mn, cen_tend_ht, 'mean = ' + str(round(mo, 3)), ha = 'center')
   # Display the comparison value.
-  if ( !is.null( compVal ) ) {
-    pGtCompVal = sum( paramSampleVec > compVal ) / length( paramSampleVec ) 
-    pLtCompVal = 1 - pGtCompVal
-    lines( c(compVal,compVal) , c(0.96*cvHt,0) , 
-           lty="dotted" , lwd=2 , col=cvCol )
-    text( compVal , cvHt ,
-          bquote( .(round(100*pLtCompVal,1)) * "% < " *
-                   .(signif(compVal,3)) * " < " * 
-                   .(round(100*pGtCompVal,1)) * "%" ) ,
-          adj=c(pLtCompVal,0) ,  , col=cvCol )
-    postSummary[,"compVal"] = compVal
-    postSummary[,"pGtCompVal"] = pGtCompVal
-  }
+  if comp_val is not None:
+    p_gt_comp_val = np.sum(param_sample_vec > comp_val) / len(param_sample_vec)
+    p_lt_comp_val = 1 - p_gt_comp_val
+    ax.axvline(comp_val, ls = ':', lw = 2, color = cv_col)
+    ax.text(comp_val, cv_ht, str(round(100 * p_lt_comp_val, 1)) + \
+                             '% < ' + \
+                             str(round(comp_val, 3)) + \
+                             ' < ' + \
+                             str(round(100 * p_gt_comp_val, 1)) + \
+                             '%', ha = 'center')
+    post_summary['comp_val'] = comp_val
+    post_summary['p_gt_comp_val'] = p_gt_comp_val
   # Display the ROPE.
-  if ( !is.null( ROPE ) ) {
-    pInROPE = ( sum( paramSampleVec > ROPE[1] & paramSampleVec < ROPE[2] )
-                / length( paramSampleVec ) )
-    pGtROPE = ( sum( paramSampleVec >= ROPE[2] ) / length( paramSampleVec ) )
-    pLtROPE = ( sum( paramSampleVec <= ROPE[1] ) / length( paramSampleVec ) )
-    lines( c(ROPE[1],ROPE[1]) , c(0.96*ROPEtextHt,0) , lty="dotted" , lwd=2 ,
-           col=ropeCol )
-    lines( c(ROPE[2],ROPE[2]) , c(0.96*ROPEtextHt,0) , lty="dotted" , lwd=2 ,
-           col=ropeCol)
-    text( mean(ROPE) , ROPEtextHt ,
-          bquote( .(round(100*pLtROPE,1)) * "% < " * .(ROPE[1]) * " < " * 
-                   .(round(100*pInROPE,1)) * "% < " * .(ROPE[2]) * " < " * 
-                   .(round(100*pGtROPE,1)) * "%" ) ,
-          adj=c(pLtROPE+.5*pInROPE,0) ,  , col=ropeCol )
-    
-    postSummary[,"ROPElow"]=ROPE[1] 
-    postSummary[,"ROPEhigh"]=ROPE[2] 
-    postSummary[,"pLtROPE"]=pLtROPE
-    postSummary[,"pInROPE"]=pInROPE
-    postSummary[,"pGtROPE"]=pGtROPE
-  }
-  # Display the HDI.
-  lines( HDI , c(0,0) , lwd=4 , lend=1 )
-  text( mean(HDI) , 0 , bquote(.(100*credMass) * "% HDI" ) ,
-        adj=c(.5,-1.7) ,  )
-  text( HDI[1] , 0 , bquote(.(signif(HDI[1],3))) ,
-        adj=c(HDItextPlace,-0.5) ,  )
-  text( HDI[2] , 0 , bquote(.(signif(HDI[2],3))) ,
-        adj=c(1.0-HDItextPlace,-0.5) ,  )
-  par(xpd=F)
-  #
+  if rope is not None:
+    p_in_rope = np.sum(np.logical_and(param_sample_vec > rope[0],
+                                      param_sample_vec < rope[1])) / len(param_sample_vec)
+    p_gt_rope = np.sum(param_sample_vec >= rope[1]) / len(param_sample_vec)
+    p_lt_rope = np.sum(param_sample_vec <= rope[0]) / len(param_sample_vec)
+    ax.axvline(rope[0], ls = ':', lw = 2, color = rope_col)
+    ax.axvline(rope[1], ls = ':', lw = 2, color = rope_col)
+    ax.text(np.mean(rope), rope_text_ht, str(round(100 * p_lt_rope, 1)) + \
+                                         '% < ' + \
+                                         str(rope[0]) + \
+                                         ' < ' + \
+                                         str(round(p_in_rope, 1)) + \
+                                         '% < ' + \
+                                         str(rope[1]) + \
+                                         ' < ' + \
+                                         str(round(100 * p_gt_rope, 1)) + \
+                                         '%', ha = 'center')
+    post_summary['rope_low'] = rope[0]
+    post_summary['rope_high'] = rope[1]
+    post_summary['p_lt_rope'] = p_lt_rope
+    post_summary['p_in_rope'] = p_in_rope
+    post_summary['p_gt_rope'] = p_gt_rope
+  # Display the HDI
+  ax.axvline(hdi[0], lw = 4, color = 'C1')
+  ax.axvline(hdi[1], lw = 4, color = 'C1')
+  ax.text(np.mean(hdi), 0, str(100 * cred_mass) + '% HDI', ha = 'center')
+  ax.text(hdi[0], 0, str(round(hdi[0], 3)), ha = 'center')
+  ax.text(hdi[1], 0, str(round(hdi[1], 3)), ha = 'center')
 
-  return( postSummary )
-}
-  '''
+  return post_summary
