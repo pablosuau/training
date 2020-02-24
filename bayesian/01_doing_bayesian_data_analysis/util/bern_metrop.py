@@ -8,7 +8,7 @@ from dbda2e_utilities import plot_post, effective_size
 # This is a modified version of the original R file in which I am paametrising some
 # of the elements of the original file
 
-def bern_metrop(proposal_sd):
+def bern_metrop(proposal_sd, random_seed = 47405):
   # Specify the data to be used in the likelihood function
   my_data = np.concatenate((np.repeat(0, 6), np.repeat(1, 14)), axis = None) 
 
@@ -64,7 +64,7 @@ def bern_metrop(proposal_sd):
 
   # Now generate the random walk. The 't' index is time or trial in the walk.
   # Specify seed to reproduce same random walk:
-  np.random.seed(47405)
+  np.random.seed(random_seed)
   # Specify standard deviation of proposal distribution:
   for t in range(traj_length - 1):
     current_position = trajectory[t]
