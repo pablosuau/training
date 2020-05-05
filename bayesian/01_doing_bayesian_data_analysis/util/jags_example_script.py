@@ -1,5 +1,6 @@
 import pandas as pd
 import pymc3 as pm
+from dbda2e_utilities import diag_mcmc
 
 # Load the data (it has to be in the current working directory)
 my_data = pd.read_csv('z15n50.csv')
@@ -7,55 +8,29 @@ y = my_data.y.values # The y values are in the column named y
 n_total = y.shape[0]
 
 # Define the model
+# PyMC3 uses a different model by default. Therefore, most of the initialisation and additional parameters
+# in the R code are not relevant in the Python version. For instance, we do not need an update(n.iter = 500) 
+# equivalent since the resulting traces already have their burn-in period already filtered out, and it consists
+# of 500 steps
 with pm.Model() as model:
 	theta = pm.Beta('theta', alpha = 1, beta = 1)
 	y_obs = pm.Bernoulli('y_obs', p = theta, observed = y)
-	# Run the chains
-	trace = pm.sample(draws = 500, chains = 3)
-pm.traceplot(trace)
+	# Run the chains - no need to add jitter since PyMC3 already does it
+    # Other values used in the R code are set by default in PyMC3
+	trace = pm.sample(chains = 3, draws = 3334)
+    
+# Examine the chains
+# Convergence diagnostics
+diag_mcmc(trace, par_name = 'theta')
+print(len(trace['theta'])) # Remove this
+print(trace['theta']) # Remove this
+print(dir(trace))
+print(trace.varnames)
+
 
 '''
 
-# Load the functions used below:
-source("DBDA2E-utilities.R") # Must be in R's current working directory.
-require(rjags)               # Must have previously installed package rjags.
-
-fileNameRoot="Jags-ExampleScript" # For output file names.
-
-
-
-# Define the model:
-modelString = "
-model {
-  for ( i in 1:Ntotal ) {
-    y[i] ~ dbern( theta )
-  }
-  theta ~ dbeta( 1 , 1 )
-}
-" # close quote for modelString
-writeLines( modelString , con="TEMPmodel.txt" )
-
-# Initialize the chains based on MLE of data.
-# Option: Use single initial value for all chains:
-#  thetaInit = sum(y)/length(y)
-#  initsList = list( theta=thetaInit )
-# Option: Use function that generates random values for each chain:
-initsList = function() {
-  resampledY = sample( y , replace=TRUE )
-  thetaInit = sum(resampledY)/length(resampledY)
-  thetaInit = 0.001+0.998*thetaInit # keep away from 0,1
-  return( list( theta=thetaInit ) )
-}
-
-# Run the chains:
-jagsModel = jags.model( file="TEMPmodel.txt" , data=dataList , inits=initsList , 
-                        n.chains=3 , n.adapt=500 )
-update( jagsModel , n.iter=500 )
-codaSamples = coda.samples( jagsModel , variable.names=c("theta") ,
-                            n.iter=3334 )
-save( codaSamples , file=paste0(fileNameRoot,"Mcmc.Rdata") )
-
-# Examine the chains:
+# Examine the chains: - codaSamples is my trace in Python
 # Convergence diagnostics:
 diagMCMC( codaObject=codaSamples , parName="theta" )
 saveGraph( file=paste0(fileNameRoot,"ThetaDiag") , type="eps" )

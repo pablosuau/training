@@ -4,6 +4,7 @@ from math import ceil
 from scipy.optimize import fmin
 from scipy.stats import *
 from statsmodels.tsa.stattools import acf
+import pymc3 as pm
 
 #------------------------------------------------------------------------------
 # Implementation of R functions not in Python
@@ -83,6 +84,57 @@ def hdi_of_grid(prob_mass_vector, cred_mass = 0.95):
     hdi_indexes = np.where(prob_mass_vector >= hdi_height)[0]
     hdi_mass = np.sum(prob_mass_vector[hdi_indexes])
     return [hdi_indexes, hdi_mass, hdi_height]
+
+#------------------------------------------------------------------------------
+# Function(s) for plotting properties of mcmc trace objects.
+def diag_mcmc(trace, par_name = None):
+    # This has to be done because I couldn't find how to initialise a parameter
+    # from another in Python, as it is done in the R code
+    if par_name is None:
+        par_name = trace.varnames[-1]
+
+    fig, ax = plt.subplots(2, 2)
+    # Traceplot
+    n = int(len(trace[par_name]) / trace.nchains)
+    traces = [trace[par_name][i:i + n] for i in range(0, len(trace[par_name]), n)]
+    for t in traces:
+        ax[0][0].plot(t)
+
+    fig.set_figwidth(16)
+'''    
+diag_mcmc = function( codaObject , parName=varnames(codaObject)[1] ,
+                     saveName=NULL , saveType="jpg" ) {
+  DBDAplColors = c("skyblue","black","royalblue","steelblue")
+  openGraph(height=5,width=7)
+  par( mar=0.5+c(3,4,1,0) , oma=0.1+c(0,0,2,0) , mgp=c(2.25,0.7,0) , 
+       cex.lab=1.5 )
+  layout(matrix(1:4,nrow=2))
+  # traceplot and gelman.plot are from CODA package:
+  require(coda)
+  coda::traceplot( codaObject[,c(parName)] , main="" , ylab="Param. Value" ,
+                   col=DBDAplColors ) 
+  tryVal = try(
+    coda::gelman.plot( codaObject[,c(parName)] , main="" , auto.layout=FALSE , 
+                       col=DBDAplColors )
+  )  
+  # if it runs, gelman.plot returns a list with finite shrink values:
+  if ( class(tryVal)=="try-error" ) {
+    plot.new() 
+    print(paste0("Warning: coda::gelman.plot fails for ",parName))
+  } else { 
+    if ( class(tryVal)=="list" & !is.finite(tryVal$shrink[1]) ) {
+      plot.new() 
+      print(paste0("Warning: coda::gelman.plot fails for ",parName))
+    }
+  }
+  DbdaAcfPlot(codaObject,parName,plColors=DBDAplColors)
+  DbdaDensPlot(codaObject,parName,plColors=DBDAplColors)
+  mtext( text=parName , outer=TRUE , adj=c(0.5,0.5) , cex=2.0 )
+  if ( !is.null(saveName) ) {
+    saveGraph( file=paste0(saveName,"Diag",parName), type=saveType)
+  }
+}
+'''
 
 #------------------------------------------------------------------------------
 # Functions for summarizing and plotting distribution of a large sample; 
