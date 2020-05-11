@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from math import ceil
+from math import ceil, sqrt
 from scipy.optimize import fmin
 from scipy.stats import *
 from statsmodels.tsa.stattools import acf
@@ -96,11 +96,45 @@ def diag_mcmc(trace, par_name = None):
     fig, ax = plt.subplots(2, 2)
     # Traceplot
     n = int(len(trace[par_name]) / trace.nchains)
-    traces = [trace[par_name][i:i + n] for i in range(0, len(trace[par_name]), n)]
+    traces = np.array([trace[par_name][i:i + n] for i in range(0, len(trace[par_name]), n)])
     for t in traces:
-        ax[0][0].plot(t)
+        ax[0][0].plot(t, alpha = 0.5)
+    ax[0][0].set_ylabel('param. value')
+    ax[0][0].set_xlabel('iteration')
+    # Unfortunately I have to do the Gelman plot by hand. Additionally, the function does 
+    # not provide quantiles as in the case of the R equivalent. 
+    gelman_rubin = []
+    for it in range(np.shape(traces)[1]):
+        traces_it = traces[:, :it]
+        # Code extracted from https://github.com/pymc-devs/pymc/blob/master/pymc/diagnostics.py
+        m, n = np.shape(traces_it)
+        # Calculate between-chain variance
+        B_over_n = np.sum((np.mean(traces_it, 1) - np.mean(traces_it)) ** 2) / (m - 1)
+
+        # Calculate within-chain variances
+        W = np.sum([(traces_it[i] - xbar) ** 2 for i, xbar in enumerate(np.mean(traces_it, 1))]) / (m * (n - 1))
+
+        # (over) estimate of variance
+        s2 = W * (n - 1) / n + B_over_n
+
+        # Pooled posterior variance estimate
+        V = s2 + B_over_n / m
+
+        # Calculate PSRF
+        R = V / W
+
+        gelman_rubin.append(np.sqrt(R))
+
+    ax[1][0].plot(range(np.shape(traces)[1]), gelman_rubin)
+    ax[1][0].axhline(y = 1, color = 'black')
+    ax[1][0].set_xlim([0, np.shape(traces)[1]])
+    ax[1][0].set_ylim([np.nanmin(gelman_rubin) - 0.005, np.nanmax(gelman_rubin) + 0.005])
+    ax[1][0].set_ylabel('shrink factor')
+    ax[1][0].set_xlabel('last iteration in chain')
 
     fig.set_figwidth(16)
+    fig.set_figheight(8)
+    plt.tight_layout()
 '''    
 diag_mcmc = function( codaObject , parName=varnames(codaObject)[1] ,
                      saveName=NULL , saveType="jpg" ) {

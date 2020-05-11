@@ -22,11 +22,6 @@ with pm.Model() as model:
 # Examine the chains
 # Convergence diagnostics
 diag_mcmc(trace, par_name = 'theta')
-print(len(trace['theta'])) # Remove this
-print(trace['theta']) # Remove this
-print(dir(trace))
-print(trace.varnames)
-
 
 '''
 
