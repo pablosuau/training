@@ -87,6 +87,37 @@ def hdi_of_grid(prob_mass_vector, cred_mass = 0.95):
 
 #------------------------------------------------------------------------------
 # Function(s) for plotting properties of mcmc trace objects.
+def dbda_acf_plot(trace, par_name, ax):
+    n = int(len(trace[par_name]) / trace.nchains)
+    traces = np.array([trace[par_name][i:i + n] for i in range(0, len(trace[par_name]), n)])
+    for t in traces:
+        ax.plot(acf(t), linestyle = 'solid', marker = 'o')
+    ax.axhline(y = 0, color = 'black')
+    ax.set_ylabel('autocorrelation')
+    ax.set_xlabel('lag')
+    ax.annotate('ESS = ' + str(round(effective_size(trace[par_name]), 1)), xy = (0.75, 0.85), xycoords = 'axes fraction')
+
+def dbda_dens_plot(trace, par_name, ax, cred_mass = 0.95):
+    n = int(len(trace[par_name]) / trace.nchains)
+    traces = np.array([trace[par_name][i:i + n] for i in range(0, len(trace[par_name]), n)])
+    x = np.linspace(0, 1, 1000)
+    hdis = []
+    for t in traces:
+        color = next(ax._get_lines.prop_cycler)['color']
+        ax.plot(x, gaussian_kde(t)(x), color = color)
+        hdi = hdi_of_mcmc(t, cred_mass)
+        ax.plot(hdi, [0, 0], marker = '|', linestyle = 'None', color = color)
+        hdis.append(hdi)
+    ax.text(np.mean(hdis), 0.5, '95% HDI', ha = 'center')
+    ax.axhline(y = 0, color = 'black')
+    ax.set_ylabel('density')
+    ax.set_xlabel('param. value')
+    eff_chn_lngth = effective_size(trace[par_name])
+    mcse = np.std(traces) / np.sqrt(eff_chn_lngth)
+    ax.annotate('MCSE = \n' + str(round(mcse, 5)), 
+                xy = (0.85, 0.75), 
+                xycoords = 'axes fraction')
+
 def diag_mcmc(trace, par_name = None):
     # This has to be done because I couldn't find how to initialise a parameter
     # from another in Python, as it is done in the R code
@@ -132,43 +163,11 @@ def diag_mcmc(trace, par_name = None):
     ax[1][0].set_ylabel('shrink factor')
     ax[1][0].set_xlabel('last iteration in chain')
 
-    fig.set_figwidth(16)
-    fig.set_figheight(8)
-    plt.tight_layout()
-'''    
-diag_mcmc = function( codaObject , parName=varnames(codaObject)[1] ,
-                     saveName=NULL , saveType="jpg" ) {
-  DBDAplColors = c("skyblue","black","royalblue","steelblue")
-  openGraph(height=5,width=7)
-  par( mar=0.5+c(3,4,1,0) , oma=0.1+c(0,0,2,0) , mgp=c(2.25,0.7,0) , 
-       cex.lab=1.5 )
-  layout(matrix(1:4,nrow=2))
-  # traceplot and gelman.plot are from CODA package:
-  require(coda)
-  coda::traceplot( codaObject[,c(parName)] , main="" , ylab="Param. Value" ,
-                   col=DBDAplColors ) 
-  tryVal = try(
-    coda::gelman.plot( codaObject[,c(parName)] , main="" , auto.layout=FALSE , 
-                       col=DBDAplColors )
-  )  
-  # if it runs, gelman.plot returns a list with finite shrink values:
-  if ( class(tryVal)=="try-error" ) {
-    plot.new() 
-    print(paste0("Warning: coda::gelman.plot fails for ",parName))
-  } else { 
-    if ( class(tryVal)=="list" & !is.finite(tryVal$shrink[1]) ) {
-      plot.new() 
-      print(paste0("Warning: coda::gelman.plot fails for ",parName))
-    }
-  }
-  DbdaAcfPlot(codaObject,parName,plColors=DBDAplColors)
-  DbdaDensPlot(codaObject,parName,plColors=DBDAplColors)
-  mtext( text=parName , outer=TRUE , adj=c(0.5,0.5) , cex=2.0 )
-  if ( !is.null(saveName) ) {
-    saveGraph( file=paste0(saveName,"Diag",parName), type=saveType)
-  }
-}
-'''
+    fig.set_figwidth(12)
+    fig.set_figheight(6)
+
+    dbda_acf_plot(trace, par_name, ax[0][1])
+    dbda_dens_plot(trace, par_name, ax[1][1])
 
 #------------------------------------------------------------------------------
 # Functions for summarizing and plotting distribution of a large sample; 
