@@ -1,6 +1,6 @@
 import pandas as pd
 import pymc3 as pm
-from dbda2e_utilities import diag_mcmc
+from dbda2e_utilities import diag_mcmc, plot_post
 
 # Load the data (it has to be in the current working directory)
 my_data = pd.read_csv('z15n50.csv')
@@ -22,20 +22,7 @@ with pm.Model() as model:
 # Examine the chains
 # Convergence diagnostics
 diag_mcmc(trace, par_name = 'theta')
-
-'''
-
-# Examine the chains: - codaSamples is my trace in Python
-# Convergence diagnostics:
-diagMCMC( codaObject=codaSamples , parName="theta" )
-saveGraph( file=paste0(fileNameRoot,"ThetaDiag") , type="eps" )
-# Posterior descriptives:
-openGraph(height=3,width=4)
-par( mar=c(3.5,0.5,2.5,0.5) , mgp=c(2.25,0.7,0) )
-plotPost( codaSamples[,"theta"] , main="theta" , xlab=bquote(theta) )
-saveGraph( file=paste0(fileNameRoot,"ThetaPost") , type="eps" )
-# Re-plot with different annotations:
-plotPost( codaSamples[,"theta"] , main="theta" , xlab=bquote(theta) , 
-          cenTend="median" , compVal=0.5 , ROPE=c(0.45,0.55) , credMass=0.90 )
-saveGraph( file=paste0(fileNameRoot,"ThetaPost2") , type="eps" )
-'''
+# Posterior descriptives
+plot_post(trace['theta'], main = 'theta', xlab = 'theta', cen_tend = 'mode')
+# Re-plot with different notation
+plot_post(trace['theta'], main = 'theta', xlab = 'theta', cen_tend = 'median', comp_val = 0.5, rope = [0.45, 0.55], cred_mass = 0.9)

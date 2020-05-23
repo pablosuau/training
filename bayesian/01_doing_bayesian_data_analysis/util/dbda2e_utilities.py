@@ -36,7 +36,7 @@ def hdi_of_mcmc(sample_vec, cred_mass = 0.9):
   for i in range(n_cis):
     ci_width[i] = sorted_pts[i + ci_idx_inc] - sorted_pts[i]
   hdi_min = sorted_pts[np.argmin(ci_width)]
-  hdi_max = sorted_pts[np.argmax(ci_width) + ci_idx_inc]
+  hdi_max = sorted_pts[np.argmin(ci_width) + ci_idx_inc]
   hdi_lim = [hdi_min, hdi_max]
   
   return hdi_lim
@@ -195,7 +195,7 @@ def plot_post(param_sample_vec,
   if xlab is None: 
     xlab = "Param. Val."
   if xlim is None:
-    values = [comp_val, rope, param_sample_vec]
+    values = np.hstack([v for v in [comp_val, rope, param_sample_vec] if v is not None])
     xlim = [min(values), max(values)]
   if main is None:
     main = ''
