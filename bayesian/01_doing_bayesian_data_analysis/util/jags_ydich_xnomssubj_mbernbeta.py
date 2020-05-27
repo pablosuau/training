@@ -38,7 +38,7 @@ def gen_mcmc(data, num_saved_steps = 50000):
         n_iter = ceil((num_saved_steps * thin_steps) / float(n_chains))
         trace = pm.sample(chains = n_chains, draws = n_iter)
 
-    pm.traceplot(trace)    
+    return trace  
 
 '''
 
