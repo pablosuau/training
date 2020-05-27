@@ -9,7 +9,7 @@ n_total = y.shape[0]
 
 # Define the model
 # PyMC3 uses a different model by default. Therefore, most of the initialisation and additional parameters
-# in the R code are not relevant in the Python version. For instance, we do not need an update(n.iter = 500) 
+# in the R code are not relevant in the Python version. For instance, we do not need an update (n.iter = 500) 
 # equivalent since the resulting traces already have their burn-in period already filtered out, and it consists
 # of 500 steps
 with pm.Model() as model:

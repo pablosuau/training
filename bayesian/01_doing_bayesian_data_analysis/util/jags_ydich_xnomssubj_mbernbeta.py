@@ -1,105 +1,47 @@
 import numpy as np
 import pymc3 as pm
+from math import ceil
 
 def gen_mcmc(data, num_saved_steps = 50000):
     # This function expects the data to be a Pandas dataframe with one column named y
     # being a Pandas series of integer 0, 1 values and one column named s being a 
     # Pandas series of subject identifiers
+
+    # THE DATA
     y = data.y.astype(int).values
     # Convert strings to consecutive integer levels
-    s = data.s.apply(lambda x: data.s.unique().tolist().index(x))
+    subjects = data.s.unique().tolist()
+    s = data.s.apply(lambda x: subjects.index(x))
     # Do some checking that data makes sense
     if np.any(np.logical_and(y != 0, y != 1)):
         raise ValueError('All y values must be 0 or 1')
     n_total = len(y)
-    n_subj = len(s.unique().tolist())
+    n_subj = len(subjects)
 
-    # The model
+    # THE MODEL
+    theta = []
+    y_obs = []
+    parameters = [] # The parameters to be monutored
+    with pm.Model() as model:
+        for i in range(len(subjects)):
+            # N.B. 2,2 prior; change as appropriate
+            # No need to use the 'start' parameter in pm.Beta since the auto selected 
+            # MCMC algorithm already initialises the chain's starting point 
+            # )In the original R code the starting point was the MLE + some random noise)
+            theta.append(pm.Beta('theta_' + str(i + 1), alpha = 2, beta = 2))
+            parameters.append('theta_' + str(i + 1))
+            y_obs.append(pm.Bernoulli('y_obs_' + str(i + 1), p = theta[i], observed = y[s == i]))
+        # RUN THE CHAINS - some of the parameters in the original R code do not translate
+        # well to the PyMC3's MCMC algorithm (adapt_stes, burn_in_Steps)
+        n_chains = 4        # n_chains should be 2 or more for diagnostics
+        thin_steps = 1
+        n_iter = ceil((num_saved_steps * thin_steps) / float(n_chains))
+        trace = pm.sample(chains = n_chains, draws = n_iter)
+
+    pm.traceplot(trace)    
 
 '''
-#===============================================================================
 
-genMCMC = function( data , numSavedSteps=50000 , saveName=NULL ) { 
-  require(rjags)
-  #-----------------------------------------------------------------------------
-  # THE DATA.
-  # N.B.: This function expects the data to be a data frame, 
-  # with one component named y being a vector of integer 0,1 values,
-  # and one component named s being a factor of subject identifiers.
-  y = data$y
-  s = as.numeric(data$s) # converts character to consecutive integer levels
-  # Do some checking that data make sense:
-  if ( any( y!=0 & y!=1 ) ) { stop("All y values must be 0 or 1.") }
-  Ntotal = length(y)
-  Nsubj = length(unique(s))
-  # Specify the data in a list, for later shipment to JAGS:
-  dataList = list(
-    y = y ,
-    s = s ,
-    Ntotal = Ntotal ,
-    Nsubj = Nsubj
-  )
-  #-----------------------------------------------------------------------------
-  # THE MODEL.
-  modelString = "
-  model {
-    for ( i in 1:Ntotal ) {
-      y[i] ~ dbern( theta[s[i]] )
-    }
-    for ( sIdx in 1:Nsubj ) {
-      theta[sIdx] ~ dbeta( 2 , 2 ) # N.B.: 2,2 prior; change as appropriate.
-    }
-  }
-  " # close quote for modelString
-  writeLines( modelString , con="TEMPmodel.txt" )
-  #-----------------------------------------------------------------------------
-  # INTIALIZE THE CHAINS.
-  # Initial values of MCMC chains based on data:
-  # Option 1: Use single initial value for all chains:
-  #  thetaInit = rep(0,Nsubj)
-  #  for ( sIdx in 1:Nsubj ) { # for each subject
-  #    includeRows = ( s == sIdx ) # identify rows of this subject
-  #    yThisSubj = y[includeRows]  # extract data of this subject
-  #    thetaInit[sIdx] = sum(yThisSubj)/length(yThisSubj) # proportion
-  #  }
-  #  initsList = list( theta=thetaInit )
-  # Option 2: Use function that generates random values near MLE:
-  initsList = function() {
-    thetaInit = rep(0,Nsubj)
-    for ( sIdx in 1:Nsubj ) { # for each subject
-      includeRows = ( s == sIdx ) # identify rows of this subject
-      yThisSubj = y[includeRows]  # extract data of this subject
-      resampledY = sample( yThisSubj , replace=TRUE ) # resample
-      thetaInit[sIdx] = sum(resampledY)/length(resampledY) 
-    }
-    thetaInit = 0.001+0.998*thetaInit # keep away from 0,1
-    return( list( theta=thetaInit ) )
-  }
-  #-----------------------------------------------------------------------------
-  # RUN THE CHAINS
-  parameters = c( "theta")     # The parameters to be monitored
-  adaptSteps = 500             # Number of steps to adapt the samplers
-  burnInSteps = 500            # Number of steps to burn-in the chains
-  nChains = 4                  # nChains should be 2 or more for diagnostics 
-  thinSteps = 1
-  nIter = ceiling( ( numSavedSteps * thinSteps ) / nChains )
-  # Create, initialize, and adapt the model:
-  jagsModel = jags.model( "TEMPmodel.txt" , data=dataList , inits=initsList , 
-                          n.chains=nChains , n.adapt=adaptSteps )
-  # Burn-in:
-  cat( "Burning in the MCMC chain...\n" )
-  update( jagsModel , n.iter=burnInSteps )
-  # The saved MCMC chain:
-  cat( "Sampling final MCMC chain...\n" )
-  codaSamples = coda.samples( jagsModel , variable.names=parameters , 
-                              n.iter=nIter , thin=thinSteps )
-  # resulting codaSamples object has these indices: 
-  #   codaSamples[[ chainIdx ]][ stepIdx , paramIdx ]
-  if ( !is.null(saveName) ) {
-    save( codaSamples , file=paste(saveName,"Mcmc.Rdata",sep="") )
-  }
-  return( codaSamples )
-} # end function
 
 #===============================================================================
 
