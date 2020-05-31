@@ -173,6 +173,42 @@ def diag_mcmc(trace, par_name = None):
 # Functions for summarizing and plotting distribution of a large sample; 
 # typically applied to MCMC posterior.
 
+def summarize_post(param_sample_vec, comp_val = None, rope = None, cred_mass = 0.95):
+    mean_param = np.mean(param_sample_vec)
+    median_param = np.median(param_sample_vec)
+    dres = gaussian_kde(param_sample_vec, 2)
+    param_l = np.linspace(0, 1, 1000)
+    mode_param = param_l[np.argmax(dres(param_l))]
+    mcmc_eff_sz = round(effective_size(param_sample_vec), 1)
+    hdi_lim = hdi_of_mcmc(param_sample_vec, cred_mass = cred_mass)
+    if comp_val is not None:
+        pcgt_comp_val = (100 * np.sum(np.array(param_sample_vec) > comp_val) / len(param_sample_vec))
+    else:
+        pcgt_comp_val = None
+    if rope is not None:
+        pclt_rope = (100 * np.sum(np.array(param_sample_vec) < rope[0]) / len(param_sample_vec))
+        pcgt_rope = (100 * np.sum(np.array(param_sample_vec) > rope[1]) / len(param_sample_vec))
+        pcin_rope = 100 - (pclt_rope + pcgt_rope)
+    else:
+        pclt_rope = None
+        pcgt_rope = None
+        pcin_rope = None
+        rope = [None, None]
+    return {'mean': mean_param,
+            'median': median_param,
+            'mode': mode_param,
+            'ess': mcmc_eff_sz,
+            'hdi_mass': cred_mass,
+            'hdi_low': hdi_lim[0],
+            'hdi_high': hdi_lim[1],
+            'comp_val': comp_val,
+            'pcnt_gt_comp_val': pcgt_comp_val,
+            'rope_low': rope[0],
+            'rope_high': rope[1],
+            'pcnt_lt_rope': pclt_rope,
+            'pcnt_in_rope': pcin_rope,
+            'pcnt_gt_rope': pcgt_rope}
+
 def plot_post(param_sample_vec,
               cen_tend = None, 
               comp_val = None,

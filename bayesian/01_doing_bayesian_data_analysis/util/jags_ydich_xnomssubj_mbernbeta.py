@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
 import pymc3 as pm
 from math import ceil
+from dbda2e_utilities import summarize_post
 
 def gen_mcmc(data, num_saved_steps = 50000):
     # This function expects the data to be a Pandas dataframe with one column named y
@@ -38,44 +40,36 @@ def gen_mcmc(data, num_saved_steps = 50000):
         n_iter = ceil((num_saved_steps * thin_steps) / float(n_chains))
         trace = pm.sample(chains = n_chains, draws = n_iter)
 
-    return trace  
+    return trace
+
+def smry_mcmc(trace, comp_val = 0.5, rope = None, comp_val_diff = 0, rope_diff = None):
+    parameter_names = [v for v in trace.varnames if 'logodds' not in v]
+    mcmc_mat = pd.DataFrame()
+    for p in parameter_names:
+        mcmc_mat[p] = trace[p]
+    summary_info = {}
+    for p in parameter_names:
+        summary_info[p] = summarize_post(mcmc_mat[p].values.tolist(), 
+                                           comp_val = comp_val,
+                                           rope = rope)
+    for t1_idx in range(len(parameter_names)):
+        for t2_idx in range(t1_idx + 1, len(parameter_names)):
+            par_name1 = parameter_names[t1_idx]
+            par_name2 = parameter_names[t2_idx]
+            summary_info[par_name1 + \
+                         ' - ' + \
+                         par_name2] = summarize_post((mcmc_mat[par_name1] - \
+                                                      mcmc_mat[par_name2]).values \
+                                                                          .tolist(),
+                                                     comp_val = comp_val_diff,
+                                                     rope = rope_diff)
+    print(summary_info)
+    return(summary_info)
+
+def plot_mcmc(trace, data, comp_val = 0.5, rope = None, comp_val_diff = 0, rope_diff = None):
+    pass
 
 '''
-
-
-#===============================================================================
-
-smryMCMC = function(  codaSamples , compVal=0.5 , rope=NULL , 
-                      compValDiff=0.0 , ropeDiff=NULL , saveName=NULL ) {
-  mcmcMat = as.matrix(codaSamples,chains=TRUE)
-  Ntheta = length(grep("theta",colnames(mcmcMat)))
-  summaryInfo = NULL
-  rowIdx = 0
-  for ( tIdx in 1:Ntheta ) {
-    parName = paste0("theta[",tIdx,"]")
-    summaryInfo = rbind( summaryInfo , 
-      summarizePost( mcmcMat[,parName] , compVal=compVal , ROPE=rope ) )
-    rowIdx = rowIdx+1
-    rownames(summaryInfo)[rowIdx] = parName
-  }
-  for ( t1Idx in 1:(Ntheta-1) ) {
-    for ( t2Idx in (t1Idx+1):Ntheta ) {
-      parName1 = paste0("theta[",t1Idx,"]")
-      parName2 = paste0("theta[",t2Idx,"]")
-      summaryInfo = rbind( summaryInfo , 
-        summarizePost( mcmcMat[,parName1]-mcmcMat[,parName2] ,
-                       compVal=compValDiff , ROPE=ropeDiff ) )
-      rowIdx = rowIdx+1
-      rownames(summaryInfo)[rowIdx] = paste0(parName1,"-",parName2)
-    }
-  }
-  if ( !is.null(saveName) ) {
-    write.csv( summaryInfo , file=paste(saveName,"SummaryInfo.csv",sep="") )
-  }
-  show( summaryInfo )
-  return( summaryInfo )
-}
-
 #===============================================================================
 
 plotMCMC = function( codaSamples , data , compVal=0.5 , rope=NULL , 
