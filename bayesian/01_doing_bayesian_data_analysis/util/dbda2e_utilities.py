@@ -11,7 +11,8 @@ import pymc3 as pm
 def effective_size(x):
     # Where x is a list
     acf_x = acf(x)
-    acf_x = [f for f in acf_x if f >= 0.05]
+    # In python the acf at lag 0 is returned - we have to get rid of it
+    acf_x = [f for f in acf_x[1:] if f >= 0.05]
     
     return len(x) / (1 + 2 * np.sum(acf_x))
 
