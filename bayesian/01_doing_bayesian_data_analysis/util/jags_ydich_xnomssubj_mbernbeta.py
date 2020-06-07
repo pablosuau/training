@@ -2,7 +2,8 @@ import numpy as np
 import pandas as pd
 import pymc3 as pm
 from math import ceil
-from dbda2e_utilities import summarize_post
+import matplotlib.pyplot as plt
+from dbda2e_utilities import summarize_post, plot_post
 
 def gen_mcmc(data, num_saved_steps = 50000):
     # This function expects the data to be a Pandas dataframe with one column named y
@@ -63,67 +64,57 @@ def smry_mcmc(trace, comp_val = 0.5, rope = None, comp_val_diff = 0, rope_diff =
                                                                           .tolist(),
                                                      comp_val = comp_val_diff,
                                                      rope = rope_diff)
-    print(summary_info)
+
     return(summary_info)
 
 def plot_mcmc(trace, data, comp_val = 0.5, rope = None, comp_val_diff = 0, rope_diff = None):
-    pass
+    # N.B.: This function expects the data to be a pandas dataframe,
+    # with one component named y being a series of integer 0, 1 values,
+    # and one component named s being a series of subject identifiers
+    y = data.y.astype(int).values
+    # Convert strings to consecutive integer levels
+    subjects = data.s.unique().tolist()
+    s = data.s.apply(lambda x: subjects.index(x))
+    # Now plot the posterior
+    parameter_names = [v for v in trace.varnames if 'logodds' not in v]
+    mcmc_mat = pd.DataFrame()
+    for p in parameter_names:
+        mcmc_mat[p] = trace[p]
+    n_theta = len(parameter_names)
+    fig, ax = plt.subplots(n_theta, n_theta)
+    for t1_idx in range(n_theta):
+        for t2_idx in range(n_theta):
+            par_name1 = 'theta_' + str(t1_idx + 1)
+            par_name2 = 'theta_' + str(t2_idx + 1)
+            if t1_idx > t2_idx:
+                n_to_plot = 700
+                pt_idx = np.around(np.linspace(0, len(mcmc_mat) - 1, n_to_plot))
+                ax[t1_idx][t2_idx].scatter(mcmc_mat[par_name2][pt_idx], mcmc_mat[par_name1][pt_idx], alpha = 0.5)
+                ax[t1_idx][t2_idx].set_xlabel(par_name2)
+                ax[t1_idx][t2_idx].set_ylabel(par_name1)
+            elif t1_idx == t2_idx:
+                post_info = plot_post(mcmc_mat[par_name1], 
+                                      ax = ax[t1_idx][t2_idx], 
+                                      comp_val = comp_val, 
+                                      rope = rope, 
+                                      xlab = par_name1, 
+                                      main = '')
+                include_rows = (s == t1_idx) # Identify rows of this subject in the data
+                data_propor = np.sum(y[include_rows]) / np.sum(include_rows)
+                ax[t1_idx][t2_idx].plot(data_propor, 0, '+', c = 'red', markersize = 10)
+            elif t1_idx < t2_idx:
+                post_info = plot_post(mcmc_mat[par_name1] - mcmc_mat[par_name2],
+                                      ax = ax[t1_idx][t2_idx],
+                                      comp_val = comp_val_diff,
+                                      rope = rope_diff,
+                                      xlab = par_name1 + ' - ' + par_name2,
+                                      main = '')
+                include_rows1 = (s == t1_idx) # Identify rows of this subject in the data
+                data_propor1 = np.sum(y[include_rows1]) / np.sum(include_rows1)
+                include_rows2 = (s == t2_idx) # Identify rows of this subject in the data
+                data_propor2 = np.sum(y[include_rows2]) / np.sum(include_rows2)
+                ax[t1_idx][t2_idx].plot(data_propor1 - data_propor2, 0, '+', c = 'red', markersize = 10)
 
-'''
-#===============================================================================
-
-plotMCMC = function( codaSamples , data , compVal=0.5 , rope=NULL , 
-                     compValDiff=0.0 , ropeDiff=NULL , 
-                     saveName=NULL , saveType="jpg" ) {
-  #-----------------------------------------------------------------------------
-  # N.B.: This function expects the data to be a data frame, 
-  # with one component named y being a vector of integer 0,1 values,
-  # and one component named s being a factor of subject identifiers.
-  y = data$y
-  s = as.numeric(data$s) # converts character to consecutive integer levels
-  # Now plot the posterior:
-  mcmcMat = as.matrix(codaSamples,chains=TRUE)
-  chainLength = NROW( mcmcMat )
-  Ntheta = length(grep("theta",colnames(mcmcMat)))
-  openGraph(width=2.5*Ntheta,height=2.0*Ntheta)
-  par( mfrow=c(Ntheta,Ntheta) )
-  for ( t1Idx in 1:(Ntheta) ) {
-    for ( t2Idx in (1):Ntheta ) {
-      parName1 = paste0("theta[",t1Idx,"]")
-      parName2 = paste0("theta[",t2Idx,"]")
-      if ( t1Idx > t2Idx) {  
-        # plot.new() # empty plot, advance to next
-        par( mar=c(3.5,3.5,1,1) , mgp=c(2.0,0.7,0) )
-        nToPlot = 700
-        ptIdx = round(seq(1,chainLength,length=nToPlot))
-        plot ( mcmcMat[ptIdx,parName2] , mcmcMat[ptIdx,parName1] , cex.lab=1.75 ,
-               xlab=parName2 , ylab=parName1 , col="skyblue" )
-      } else if ( t1Idx == t2Idx ) {
-        par( mar=c(3.5,1,1,1) , mgp=c(2.0,0.7,0) )
-        postInfo = plotPost( mcmcMat[,parName1] , cex.lab = 1.75 , 
-                             compVal=compVal , ROPE=rope , cex.main=1.5 ,
-                             xlab=parName1 , main="" )
-        includeRows = ( s == t1Idx ) # identify rows of this subject in data
-        dataPropor = sum(y[includeRows])/sum(includeRows) 
-        points( dataPropor , 0 , pch="+" , col="red" , cex=3 )
-      } else if ( t1Idx < t2Idx ) {
-        par( mar=c(3.5,1,1,1) , mgp=c(2.0,0.7,0) )
-        postInfo = plotPost(mcmcMat[,parName1]-mcmcMat[,parName2] , cex.lab = 1.75 , 
-                           compVal=compValDiff , ROPE=ropeDiff , cex.main=1.5 ,
-                           xlab=paste0(parName1,"-",parName2) , main="" )
-        includeRows1 = ( s == t1Idx ) # identify rows of this subject in data
-        dataPropor1 = sum(y[includeRows1])/sum(includeRows1) 
-        includeRows2 = ( s == t2Idx ) # identify rows of this subject in data
-        dataPropor2 = sum(y[includeRows2])/sum(includeRows2) 
-        points( dataPropor1-dataPropor2 , 0 , pch="+" , col="red" , cex=3 )
-      }
-    }
-  }
-  #-----------------------------------------------------------------------------  
-  if ( !is.null(saveName) ) {
-    saveGraph( file=paste(saveName,"Post",sep=""), type=saveType)
-  }
-}
-
-#===============================================================================
-'''
+    fig.set_figwidth(12)
+    fig.set_figheight(6)
+    plt.tight_layout()
