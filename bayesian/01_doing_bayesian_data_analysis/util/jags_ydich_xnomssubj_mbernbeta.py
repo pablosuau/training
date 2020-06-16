@@ -24,7 +24,7 @@ def gen_mcmc(data, num_saved_steps = 50000):
     # THE MODEL
     theta = []
     y_obs = []
-    parameters = [] # The parameters to be monutored
+    parameters = [] # The parameters to be monitored
     with pm.Model() as model:
         for i in range(len(subjects)):
             # N.B. 2,2 prior; change as appropriate
@@ -67,7 +67,7 @@ def smry_mcmc(trace, comp_val = 0.5, rope = None, comp_val_diff = 0, rope_diff =
 
     return(summary_info)
 
-def plot_mcmc(trace, data, comp_val = 0.5, rope = None, comp_val_diff = 0, rope_diff = None):
+def plot_mcmc(trace, data, comp_val = 0.5, rope = None, comp_val_diff = 0, rope_diff = None, cen_tend = None, cen_tend_diff = None):
     # N.B.: This function expects the data to be a pandas dataframe,
     # with one component named y being a series of integer 0, 1 values,
     # and one component named s being a series of subject identifiers
@@ -98,7 +98,8 @@ def plot_mcmc(trace, data, comp_val = 0.5, rope = None, comp_val_diff = 0, rope_
                                       comp_val = comp_val, 
                                       rope = rope, 
                                       xlab = par_name1, 
-                                      main = '')
+                                      main = '',
+                                      cen_tend = cen_tend)
                 include_rows = (s == t1_idx) # Identify rows of this subject in the data
                 data_propor = np.sum(y[include_rows]) / np.sum(include_rows)
                 ax[t1_idx][t2_idx].plot(data_propor, 0, '+', c = 'red', markersize = 10)
@@ -108,7 +109,8 @@ def plot_mcmc(trace, data, comp_val = 0.5, rope = None, comp_val_diff = 0, rope_
                                       comp_val = comp_val_diff,
                                       rope = rope_diff,
                                       xlab = par_name1 + ' - ' + par_name2,
-                                      main = '')
+                                      main = '',
+                                      cen_tend = cen_tend_diff)
                 include_rows1 = (s == t1_idx) # Identify rows of this subject in the data
                 data_propor1 = np.sum(y[include_rows1]) / np.sum(include_rows1)
                 include_rows2 = (s == t2_idx) # Identify rows of this subject in the data
