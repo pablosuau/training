@@ -19,9 +19,6 @@ def gen_mcmc(data, s_name = 's', y_name = 'y', num_saved_steps = 50000, thin_ste
     subjects = data.s.unique().tolist()
 
     # THE MODEL
-    theta = []
-    z_obs = []
-    parameters = [] # The parameters to be monitored
     with pm.Model() as model:
         omega = pm.Beta('omega', 1, 1)
         kappa_minus_two = pm.Gamma('kappa_minus_two', 1.105125, 0.1051249) # mode = 1, sd = 10
@@ -34,12 +31,16 @@ def gen_mcmc(data, s_name = 's', y_name = 'y', num_saved_steps = 50000, thin_ste
                          alpha = omega * (kappa - 2) + 1, 
                          beta = (1 - omega) * (kappa - 2) + 1, 
                          shape = len(subjects))
-        z_obs = pm.Binomial('z_obs',  n = df['n'], p = thetas, observed = df['z'])
+        _ = pm.Binomial('z_obs',  n = df['n'], p = thetas, observed = df['z'])
 
         # RUN THE CHAINS - some of the parameters in the original R code do not translate
         # well to the PyMC3's MCMC algorithm (adapt_stes, burn_in_Steps)
         n_iter = ceil((num_saved_steps * thin_steps) / float(n_chains))
         trace = pm.sample(chains = n_chains, draws = n_iter)
+
+    for i in range(len(subjects)): 
+      trace.add_values({'theta_' + str(i): trace['thetas'][:, i]})
+    trace.varnames.remove('thetas')
 
     return trace
 

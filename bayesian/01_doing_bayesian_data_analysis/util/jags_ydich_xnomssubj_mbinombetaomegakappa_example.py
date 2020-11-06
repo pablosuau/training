@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 from jags_ydich_xnomssubj_mbinombetaomegakappa import gen_mcmc
 from dbda2e_utilities import diag_mcmc
 
@@ -16,18 +17,10 @@ def jags_ydich_xnomssubj_mbinombetaomegakappa_example(data_csv = 'therapeutic_to
 						  thin_steps = 10)
 
   # Display diagnostics of chain, for specified parameters
-  #parameter_names = [v for v in mcmc_trace.varnames if 'logodds' not in v] # get all parameter names
-  #for par_name in parameter_names:
-  #  diag_mcmc(mcmc_trace, par_name = par_name)
+  parameter_names = [v for v in mcmc_trace.varnames if 'log' not in v] 
+  for par_name in list(np.array(parameter_names)[[0, 1, 2, len(parameter_names) - 1]]):
+      diag_mcmc(mcmc_trace, par_name = par_name, range_0_1 = 'theta' in par_name or 'omega' in par_name)
 '''
-
-#------------------------------------------------------------------------------- 
-# Display diagnostics of chain, for specified parameters:
-parameterNames = varnames(mcmcCoda) # get all parameter names for reference
-for ( parName in parameterNames[c(1:3,length(parameterNames))] ) { 
-  diagMCMC( codaObject=mcmcCoda , parName=parName , 
-                saveName=fileNameRoot , saveType=graphFileType )
-}
 #------------------------------------------------------------------------------- 
 # Get summary statistics of chain:
 summaryInfo = smryMCMC( mcmcCoda , compVal=0.5 , 

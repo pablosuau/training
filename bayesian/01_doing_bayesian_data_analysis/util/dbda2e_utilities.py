@@ -10,7 +10,7 @@ import pymc3 as pm
 # Implementation of R functions not in Python
 def effective_size(x):
     # Where x is a list
-    acf_x = acf(x)
+    acf_x = acf(x, fft = False)
     # In python the acf at lag 0 is returned - we have to get rid of it
     acf_x = [f for f in acf_x[1:] if f >= 0.05]
     
@@ -92,24 +92,28 @@ def dbda_acf_plot(trace, par_name, ax):
     n = int(len(trace[par_name]) / trace.nchains)
     traces = np.array([trace[par_name][i:i + n] for i in range(0, len(trace[par_name]), n)])
     for t in traces:
-        ax.plot(acf(t), linestyle = 'solid', marker = 'o')
+        ax.plot(acf(t, fft = False), linestyle = 'solid', marker = 'o')
     ax.axhline(y = 0, color = 'black')
     ax.set_ylabel('autocorrelation')
     ax.set_xlabel('lag')
     ax.annotate('ESS = ' + str(round(effective_size(trace[par_name]), 1)), xy = (0.75, 0.85), xycoords = 'axes fraction')
 
-def dbda_dens_plot(trace, par_name, ax, cred_mass = 0.95):
+def dbda_dens_plot(trace, par_name, ax, cred_mass = 0.95, range_0_1 = False):
     n = int(len(trace[par_name]) / trace.nchains)
     traces = np.array([trace[par_name][i:i + n] for i in range(0, len(trace[par_name]), n)])
-    x = np.linspace(0, 1, 1000)
     hdis = []
     for t in traces:
         color = next(ax._get_lines.prop_cycler)['color']
+        if range_0_1:
+          hdi_99 = [0, 1]
+        else:
+          hdi_99 = hdi_of_mcmc(t, 0.999)
+        x = np.linspace(hdi_99[0], hdi_99[1], 1000)
         ax.plot(x, gaussian_kde(t)(x), color = color)
         hdi = hdi_of_mcmc(t, cred_mass)
         ax.plot(hdi, [0, 0], marker = '|', linestyle = 'None', color = color)
         hdis.append(hdi)
-    ax.text(np.mean(hdis), 0.5, '95% HDI', ha = 'center')
+    ax.text(np.mean(hdis), ax.get_ylim()[1] / 10.0, '95% HDI', ha = 'center')
     ax.axhline(y = 0, color = 'black')
     ax.set_ylabel('density')
     ax.set_xlabel('param. value')
@@ -119,7 +123,7 @@ def dbda_dens_plot(trace, par_name, ax, cred_mass = 0.95):
                 xy = (0.85, 0.75), 
                 xycoords = 'axes fraction')
 
-def diag_mcmc(trace, par_name = None):
+def diag_mcmc(trace, par_name = None, range_0_1 = False):
     # This has to be done because I couldn't find how to initialise a parameter
     # from another in Python, as it is done in the R code
     if par_name is None:
@@ -142,16 +146,12 @@ def diag_mcmc(trace, par_name = None):
         m, n = np.shape(traces_it)
         # Calculate between-chain variance
         B_over_n = np.sum((np.mean(traces_it, 1) - np.mean(traces_it)) ** 2) / (m - 1)
-
         # Calculate within-chain variances
         W = np.sum([(traces_it[i] - xbar) ** 2 for i, xbar in enumerate(np.mean(traces_it, 1))]) / (m * (n - 1))
-
         # (over) estimate of variance
         s2 = W * (n - 1) / n + B_over_n
-
         # Pooled posterior variance estimate
         V = s2 + B_over_n / m
-
         # Calculate PSRF
         R = V / W
 
@@ -164,11 +164,11 @@ def diag_mcmc(trace, par_name = None):
     ax[1][0].set_ylabel('shrink factor')
     ax[1][0].set_xlabel('last iteration in chain')
 
+    dbda_acf_plot(trace, par_name, ax[0][1])
+    dbda_dens_plot(trace, par_name, ax[1][1], range_0_1 = range_0_1)
+
     fig.set_figwidth(12)
     fig.set_figheight(6)
-
-    dbda_acf_plot(trace, par_name, ax[0][1])
-    dbda_dens_plot(trace, par_name, ax[1][1])
 
 #------------------------------------------------------------------------------
 # Functions for summarizing and plotting distribution of a large sample; 
