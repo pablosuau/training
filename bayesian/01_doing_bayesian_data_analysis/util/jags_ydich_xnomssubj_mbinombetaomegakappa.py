@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
 import pymc3 as pm
 from math import ceil
+from dbda2e_utilities import summarize_post
 
 def gen_mcmc(data, s_name = 's', y_name = 'y', num_saved_steps = 50000, thin_steps = 1, n_chains = 4):
     # This function expects the data to be a Pandas dataframe with one column named y
@@ -44,58 +46,42 @@ def gen_mcmc(data, s_name = 's', y_name = 'y', num_saved_steps = 50000, thin_ste
 
     return trace
 
-'''
-#===============================================================================
+def smry_mcmc(trace, comp_val = 0.5, rope = None, diff_id_vec = None, comp_val_diff = 0, rope_diff = None):
+  parameter_names = [v for v in trace.varnames if 'log' not in v]
+  mcmc_mat = pd.DataFrame()
+  for p in parameter_names:
+        mcmc_mat[p] = trace[p]
+  thetas = mcmc_mat.columns[mcmc_mat.columns.str.contains('theta')]
+  n_theta = len(thetas)
+  summary_info = {}
+  # overall omega
+  summary_info['omega'] = summarize_post(mcmc_mat['omega'].values.tolist(),
+                                         comp_val = comp_val,
+                                         rope = rope)
+  # kappa
+  summary_info['kappa_minus_two'] = summarize_post(mcmc_mat['kappa_minus_two'].values.tolist(),
+                                         comp_val = None,
+                                         rope = None)
+  # individual thetas
+  for theta in thetas:
+      summary_info[theta] = summarize_post(mcmc_mat[theta].values.tolist(),
+                                         comp_val = comp_val,
+                                         rope = rope)
 
-smryMCMC = function(  codaSamples , compVal=0.5 , rope=NULL , 
-                      diffIdVec=NULL , compValDiff=0.0 , ropeDiff=NULL , 
-                      saveName=NULL ) {
-  mcmcMat = as.matrix(codaSamples,chains=TRUE)
-  Ntheta = length(grep("theta",colnames(mcmcMat)))
-  summaryInfo = NULL
-  rowIdx = 0
-  # overall omega:
-  summaryInfo = rbind( summaryInfo , 
-                       summarizePost( mcmcMat[,"omega"] ,
-                                      compVal=compVal , ROPE=rope ) )
-  rowIdx = rowIdx+1
-  rownames(summaryInfo)[rowIdx] = "omega"
-  # kappa:
-  summaryInfo = rbind( summaryInfo , 
-                       summarizePost( mcmcMat[,"kappa"] ,
-                                      compVal=NULL , ROPE=NULL ) )
-  rowIdx = rowIdx+1
-  rownames(summaryInfo)[rowIdx] = "kappa"
-  # individual theta's:
-  for ( tIdx in 1:Ntheta ) {
-    parName = paste0("theta[",tIdx,"]")
-    summaryInfo = rbind( summaryInfo , 
-      summarizePost( mcmcMat[,parName] , compVal=compVal , ROPE=rope ) )
-    rowIdx = rowIdx+1
-    rownames(summaryInfo)[rowIdx] = parName
-  }
-  # differences of individual theta's:
-  if ( !is.null(diffIdVec) ) {
-    Nidx = length(diffIdVec)
-    for ( t1Idx in 1:(Nidx-1) ) {
-      for ( t2Idx in (t1Idx+1):Nidx ) {
-        parName1 = paste0("theta[",diffIdVec[t1Idx],"]")
-        parName2 = paste0("theta[",diffIdVec[t2Idx],"]")
-        summaryInfo = rbind( summaryInfo , 
-          summarizePost( mcmcMat[,parName1]-mcmcMat[,parName2] ,
-                         compVal=compValDiff , ROPE=ropeDiff ) )
-        rowIdx = rowIdx+1
-        rownames(summaryInfo)[rowIdx] = paste0(parName1,"-",parName2)
-      }
-    }
-  }
-  # save:
-  if ( !is.null(saveName) ) {
-    write.csv( summaryInfo , file=paste(saveName,"SummaryInfo.csv",sep="") )
-  }
-  show( summaryInfo )
-  return( summaryInfo )
-}
+  # differences of individual theta's
+  if diff_id_vec is not None:
+      n_idx = len(diff_id_vec)
+      for t1_idx in range(n_idx):
+          for t2_idx in range(t1_idx + 1, n_idx):
+              par_name_1 = thetas[diff_id_vec[t1_idx]]
+              par_name_2 = thetas[diff_id_vec[t2_idx]]
+              summary_info[par_name_1 + \
+                           '-' + \
+                           par_name_2] = summarize_post(mcmc_mat[par_name_1] - mcmc_mat[par_name_2],
+                                                        comp_val = comp_val_diff,
+                                                        rope = rope_diff) 
+
+'''
 
 #===============================================================================
 
