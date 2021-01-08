@@ -373,3 +373,24 @@ def plot_post(param_sample_vec,
   ax.text(hdi[1], 0, str(round(hdi[1], 3)), ha = 'center')
 
   return post_summary
+
+#------------------------------------------------------------------------------
+# Shape parameters from central tendency and scale:
+
+def gamma_sh_ra_from_mean_sd(mean, sd):
+  if mean <= 0:
+    raise ValueError('mean must be > 0')
+  if sd <= 0:
+    raise ValueError('sd must be >0')
+  shape = mean ** 2 / sd ** 2
+  rate = mean / sd ** 2
+  return [shape, rate]
+
+def gamma_sh_ra_from_mode_sd(mode, sd):
+  if mode <= 0:
+    raise ValueError('mode must be > 0')
+  if sd <= 0:
+    raise ValueError('sd must be >0')
+  rate = (mode + sqrt(mode ** 2 + 4 * sd ** 2)) / (2 * sd **2)
+  shape = 1 + mode * rate
+  return [shape, rate]
