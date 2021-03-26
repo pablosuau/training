@@ -1,50 +1,34 @@
+import numpy as np
+import pymc3 as pm
+
+# THE DATA
+n = 9
+z = 6
+y = np.hstack((np.repeat(0, n - z), np.repeat(1, z))).tolist()
+
+# THE MODEL
+with pm.Model() as model:
+  m_prior_prob = [0.5, 0.5] 
+  m = pm.Categorical('m', p = m_prior_prob)
+  kappa = 12
+  omega = np.array([0.25, 0.75])
+  thetas = pm.Beta('thetas',
+                   alpha = omega * (kappa - 2) + 1,
+                   beta = (1 - omega) * (kappa - 2) + 1,
+                   shape = 2)
+  theta = pm.Deterministic('theta', 
+                           (1 - m) * thetas[0] + \
+                           m * thetas[1])
+  for i in range(n):
+    _ = pm.Bernoulli('z_obs_' + str(i), p = theta, observed = y[i])
+
+  # RUN THE CHAINS
+  # Test
+  trace = pm.sample(chains = 4, draws = 1000)
+  import arviz as av
+  av.plot_trace(trace)
+  print(av.summary(trace))
 '''
-# Jags-Ydich-Xnom1subj-MbernBetaModelComp.R
-# Accompanies the book:
-#   Kruschke, J. K. (2014). Doing Bayesian Data Analysis: 
-#   A Tutorial with R, JAGS, and Stan. 2nd Edition. Academic Press / Elsevier.
-graphics.off()
-rm(list=ls(all=TRUE))
-source("DBDA2E-utilities.R")
-require(rjags)
-fileNameRoot="Jags-Ydich-Xnom1subj-MbernBetaModelComp-" # for output filenames
-
-#------------------------------------------------------------------------------
-# THE DATA.
-
-N=9
-z=6
-y = c( rep(0,N-z) , rep(1,z) )
-dataList = list(
-  y = y ,
-  N = N 
-)
-
-#------------------------------------------------------------------------------
-# THE MODEL.
-
-modelString = "
-model {
-  for ( i in 1:N ) {
-    y[i] ~ dbern( theta )
-  }
-  theta ~ dbeta( omega[m]*(kappa-2)+1 , (1-omega[m])*(kappa-2)+1 ) 
-  omega[1] <- .25
-  omega[2] <- .75
-  kappa <- 12
-  m ~ dcat( mPriorProb[] )
-  mPriorProb[1] <- .5
-  mPriorProb[2] <- .5
-}
-" # close quote for modelString
-writeLines( modelString , con="TEMPmodel.txt" )
-
-#------------------------------------------------------------------------------
-# INTIALIZE THE CHAINS.
-
-# Specific initialization is not necessary in this case, 
-# but here is a lazy version if wanted:
-# initsList = list( theta=0.5 , m=1 ) 
 
 #------------------------------------------------------------------------------
 # RUN THE CHAINS.
