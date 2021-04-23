@@ -37,10 +37,6 @@ with pm.Model() as model:
   parameter_names = ['theta', 'm']
   for par_name in parameter_names:
     diag_mcmc(trace, par_name = par_name)
-  
-  #import arviz as av
-  #av.plot_trace(trace)
-  #print(av.summary(trace))
 
   # EXAMINE THE RESULTS
 
