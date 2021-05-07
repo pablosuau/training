@@ -286,13 +286,13 @@ def plot_post(param_sample_vec,
   cv_col = 'darkgreen'
   rope_col = 'darkred'
   if breaks is None:
-    if max(param_sample_vec) > min(param_sample_vec):
+    if max(param_sample_vec) > min(param_sample_vec) and hdi[1] != hdi[0]:
       breaks = np.append(np.arange(min(param_sample_vec), 
                                    max(param_sample_vec),
                                    (hdi[1] - hdi[0]) / 18.0), 
                          max(param_sample_vec)).tolist()
     else:
-      breaks = [min(param_sample_vec) - 1.0e-6, max(param_sample_vec) + 1.0e-6]
+      breaks = [min(param_sample_vec) - 1.0e-6, (max(param_sample_vec) - min(param_sample_vec)) / 2, max(param_sample_vec) + 1.0e-6]
       border = 'C0'
 
   if not show_curve:
