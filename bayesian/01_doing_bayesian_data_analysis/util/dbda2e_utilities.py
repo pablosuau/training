@@ -292,7 +292,9 @@ def plot_post(param_sample_vec,
                                    (hdi[1] - hdi[0]) / 18.0), 
                          max(param_sample_vec)).tolist()
     else:
-      breaks = [min(param_sample_vec) - 1.0e-6, (max(param_sample_vec) - min(param_sample_vec)) / 2, max(param_sample_vec) + 1.0e-6]
+      breaks = [min(param_sample_vec) - 1.0e-6, 
+                (max(param_sample_vec) - min(param_sample_vec)) / 2, 
+                max(param_sample_vec) + 1.0e-6]
       border = 'C0'
 
   if not show_curve:

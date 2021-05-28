@@ -21,9 +21,9 @@ with pm.Model() as model:
   kappa1 = _define_deterministic('kappa1', m, kappa1_prior)
   omega1_prior = np.array([0.1, 0.4]) # True prior and pseudo prior values
   omega1 = _define_deterministic('omega1', m, omega1_prior)
-  kappa2_prior = np.array([50, 20]) # True prior and pseudo prior values
+  kappa2_prior = np.array([50, 20]) # Pseudo prior and true prior values
   kappa2 = _define_deterministic('kappa2', m, kappa2_prior)
-  omega2_prior = np.array([0.7, 0.9]) # True prior and pseudo prior values
+  omega2_prior = np.array([0.7, 0.9]) # Pseudo prior and true prior values
   omega2 = _define_deterministic('omega2', m, omega2_prior)
   theta1 = pm.Beta('theta1',
                    alpha = omega1 * (kappa1 - 2) + 1,
