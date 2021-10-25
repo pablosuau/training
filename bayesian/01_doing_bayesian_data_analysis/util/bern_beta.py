@@ -4,7 +4,7 @@ from scipy.special import betaln
 import matplotlib.pyplot as plt
 from dbda2e_utilities import hdi_of_icdf
 
-def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass = 0.95, show_pd = False):
+def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass = 0.95, show_pd = False, rope = None):
     '''
     Updates the shape parameters of a Beta distribution (posterior) based on a prior beta and a 
     set of observations - coin tosses. The calculation was derived analytically by taking advantage
@@ -45,7 +45,7 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
 
     # Compute the evidence for optional display
     # Using data transformation to preven underflow errors for large a, b values
-    p_data = np.exp(betaln(z + 1, n - z + b) - betaln(a, b))
+    p_data = np.exp(betaln(z + a, n - z + b) - betaln(a, b))
 
     # Plot the results
     # 1 x 3 panels
@@ -82,7 +82,7 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
             else:
                 text_x = 0.6
             text = 'mode = {0:.2f}'.format(mode_theta)
-        ax[0].text(text_x, 0.9 * np.max(p_theta), text, fontsize = 14)
+        ax[0].text(text_x, 0.95 * np.max(p_theta), text, fontsize = 14)
     x_ticks = ax[0].get_xticks()
     ax[0].set_xticks(x_ticks[np.round(np.linspace(0, len(x_ticks) - 1, 21)).astype(int)])
     ax[0].tick_params(rotation = 90)
@@ -106,22 +106,20 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
             ax[0].plot(np.repeat(hdi_info[0], 2), [0, hdi_height], 'r--', linewidth = 1.5)
             ax[0].plot(np.repeat(hdi_info[1], 2), [0, hdi_height], 'r--', linewidth = 1.5)
 
-  ## Mark the ROPE
-  #if ( !is.null(ROPE) ) {
-  #  #pInRope = ( pbeta( ROPE[2] , shape1=a+z , shape2=b+N-z ) 
-  #  #            - pbeta( ROPE[1] , shape1=a+z , shape2=b+N-z ) )
-  #  pInRope = ( pbeta( ROPE[2] , shape1=a , shape2=b ) 
-  #              - pbeta( ROPE[1] , shape1=a , shape2=b ) )
-  #  ropeTextHt = 0.7*yLim[2]
-  #  ropeCol = "darkred"
-  #  lines( c(ROPE[1],ROPE[1]) , c(-0.5,ropeTextHt) , type="l" , lty=2 , 
-  #         lwd=1.5 , col=ropeCol )
-  #  lines( c(ROPE[2],ROPE[2]) , c(-0.5,ropeTextHt) , type="l" , lty=2 , 
-  #         lwd=1.5 , col=ropeCol )
-  #  text( mean(ROPE) , ropeTextHt ,
-  #        paste0(ROPE[1],"<",round(pInRope,4)*100,"%<",ROPE[2]) ,
-  #        adj=c(0.5,-0.15) , cex=1.2 , col=ropeCol )    
-  #}
+    # Mark the ROPE
+    if rope is not None:
+        p_in_rope = beta.cdf(rope[1], a, b) - \
+                    beta.cdf(rope[0], a, b)
+        rope_text_ht = 0.7 * y_lim[1]
+        ax[0].plot(np.repeat(rope[0], 2), [-0.5, rope_text_ht], color = 'darkred', linewidth = 2)
+        ax[0].plot(np.repeat(rope[1], 2), [-0.5, rope_text_ht], color = 'darkred', linewidth = 2)
+        text = str(rope[0]) + ' < {0:.2f}% < '.format(p_in_rope * 100) + str(rope[1])
+        ax[0].text(np.mean(rope), 
+                   rope_text_ht,
+                   text,
+                   fontsize = 14,
+                   horizontalalignment = 'center',
+                   verticalalignment = 'bottom')
   
     # Plot the likelihood: p(Data|Theta)
     if plot_type == 'bars':
@@ -177,7 +175,7 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
             else:
                 text_x = 0.6
             text = 'mode = {0:.2f}'.format(mode_theta)
-        ax[2].text(text_x, 0.9 * np.max(p_theta_given_data), text, fontsize = 14)
+        ax[2].text(text_x, 0.95 * np.max(p_theta_given_data), text, fontsize = 14)
     x_ticks = ax[2].get_xticks()
     ax[2].set_xticks(x_ticks[np.round(np.linspace(0, len(x_ticks) - 1, 21)).astype(int)])
     ax[2].tick_params(rotation = 90)
@@ -190,7 +188,8 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
         else:
             text_x = 0.6
         text = 'p(D) = {0:.2f}'.format(p_data)
-        ax[2].text(text_x, 0.8 * np.max(p_theta_given_data), text, fontsize = 14)
+        ax[2].text(text_x, 0.95 * np.max(p_theta_given_data), text, fontsize = 14)
+        print("p(D) = " + str(p_data))
 
     # Mark the highest density interval. HDI points are not thinned in the plot
     if (show_hdi):
@@ -210,19 +209,19 @@ def bern_beta(prior_beta_ab, data, plot_type, show_cent_tend, show_hdi, hdi_mass
             ax[2].plot(np.repeat(hdi_info[0], 2), [0, hdi_height], 'r--', linewidth = 1.5)
             ax[2].plot(np.repeat(hdi_info[1], 2), [0, hdi_height], 'r--', linewidth = 1.5)
 
-  ## Mark the ROPE
-  #if ( !is.null(ROPE) ) {
-  #  pInRope = ( pbeta( ROPE[2] , shape1=a+z , shape2=b+N-z ) 
-  #              - pbeta( ROPE[1] , shape1=a+z , shape2=b+N-z ) )
-  #  ropeTextHt = 0.7*yLim[2]
-  #  ropeCol = "darkred"
-  #  lines( c(ROPE[1],ROPE[1]) , c(-0.5,ropeTextHt) , type="l" , lty=2 , 
-  #         lwd=1.5 , col=ropeCol )
-  #  lines( c(ROPE[2],ROPE[2]) , c(-0.5,ropeTextHt) , type="l" , lty=2 , 
-  #         lwd=1.5 , col=ropeCol )
-  #  text( mean(ROPE) , ropeTextHt ,
-  #        paste0(ROPE[1],"<",round(pInRope,4)*100,"%<",ROPE[2]) ,
-  #        adj=c(0.5,-0.15) , cex=1.2 , col=ropeCol )    
-  #}
+    # Mark the ROPE
+    if rope is not None:
+        p_in_rope = beta.cdf(rope[1], a + z, b + n - z) - \
+                    beta.cdf(rope[0], a + z, b + n - z)
+        rope_text_ht = 0.7 * y_lim[1]
+        ax[2].plot(np.repeat(rope[0], 2), [-0.5, rope_text_ht], color = 'darkred', linewidth = 2)
+        ax[2].plot(np.repeat(rope[1], 2), [-0.5, rope_text_ht], color = 'darkred', linewidth = 2)
+        text = str(rope[0]) + ' < {0:.2f}% < '.format(p_in_rope * 100) + str(rope[1])
+        ax[2].text(np.mean(rope), 
+                   rope_text_ht,
+                   text,
+                   fontsize = 14,
+                   horizontalalignment = 'center',
+                   verticalalignment = 'bottom')
   
     return [a + z, b + n - z]
