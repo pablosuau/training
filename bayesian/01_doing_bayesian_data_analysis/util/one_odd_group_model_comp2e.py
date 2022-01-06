@@ -52,7 +52,7 @@ n_corr_of_subj_d = []
 with pm.Model() as model:
   # Prior on model index
   model_prob = [0.5, 0.5]
-  mdl_idx = pm.Categorical("mdl_idx", model_prob)
+  mdl_idx = pm.Categorical("mdl_idx", p = model_prob)
   # Constants for prior and pseudoprior
   a_p = 1
   b_p = 1
@@ -64,33 +64,32 @@ with pm.Model() as model:
   # a[condition, model] and b[condition, model]
   # a_p and b_p represent true priors, 
   # the rest of values are pseudopriors
-  a = [[a_p, 0.40 * 125],
-       [a_p, 0.50 * 125],
-       [a_p, 0.51 * 125],
-       [a_p, 0.52 * 125]]
-  b = [[b_p, (1 - 0.40) * 125],
-       [b_p, (1 - 0.50) * 125],
-       [b_p, (1 - 0.51) * 125],
-       [b_p, (1 - 0.52) * 125]]
+  a = np.array([[a_p, 0.40 * 125],
+                [a_p, 0.50 * 125],
+                [a_p, 0.51 * 125],
+                [a_p, 0.52 * 125]])
+  b = np.array([[b_p, (1 - 0.40) * 125],
+                [b_p, (1 - 0.50) * 125],
+                [b_p, (1 - 0.51) * 125],
+                [b_p, (1 - 0.52) * 125]])
 
-  for j in range(n_cond):
-    kappa_minus_two.append(pm.Gamma("kappa_minus_two_" + str(j), 2.618, 0.0809)) # mode 20, sd 20
-    kappa.append(pm.Deterministic("kappa_" + str(j), kappa_minus_two[-1] + 2))
+  kappa_minus_two = pm.Gamma("kappa_minus_two", 2.618, 0.0809, shape = n_cond) # mode 20, sd 20
+  kappa = pm.Deterministic("kappa", kappa_minus_two[-1] + 2)
   omega0 = pm.Beta("omega0", 
-                   (1 - mdl_idx) * a0[0] + mdl_idx * a0[1], 
-                   (1 - mdl_idx) * b0[0] + mdl_idx * b0[1])
-  for j in range(n_cond):
-    omega.append(pm.Beta("omega_" + str(j), 
-                         (1 - mdl_idx) * a[j][0] + mdl_idx * a[j][1],
-                         (1 - mdl_idx) * b[j][0] + mdl_idx * b[j][1]))
-    a_beta.append(pm.Deterministic("a_beta_" + str(j),
-                                   ((1 - mdl_idx) * omega[j] + mdl_idx * omega0) * (kappa[j] - 2) + 1))
-    b_beta.append(pm.Deterministic("b_beta_" + str(j),
-                                   ((1 - mdl_idx) * omega[j] + mdl_idx * omega0) * (kappa[j] - 2) + 1))
+                   alpha = (1 - mdl_idx) * a0[0] + mdl_idx * a0[1], 
+                   beta = (1 - mdl_idx) * b0[0] + mdl_idx * b0[1], 
+                   shape = 4)
+  omega = pm.Beta("omega", 
+                  alpha = (1 - mdl_idx) * a[:, 0] + mdl_idx * a[:, 1], 
+                  beta = (1 - mdl_idx) * b[:, 0] + mdl_idx * b[:, 1], 
+                  shape = 4)
+  a_beta = pm.Deterministic("a_beta",
+                            ((1 - mdl_idx) * omega + mdl_idx * omega0) * (kappa - 2) + 1)
+  b_beta = pm.Deterministic("b_beta",
+                            ((1 - mdl_idx) * omega + mdl_idx * omega0) * (kappa - 2) + 1)
 
-  for s in range(n_subj):
-    theta.append(pm.Beta("theta_" + str(s), a_beta[cond_of_subj[s]], b_beta[cond_of_subj[s]]))
-    _ = pm.Binomial("n_corr_of_subj_" + str(s), n = n_trl_of_subj[s], p = theta[s], observed = n_corr_of_subj[s])
+  theta = pm.Beta("theta", alpha = a_beta[cond_of_subj], beta = b_beta[cond_of_subj], shape = n_subj)
+  _ = pm.Binomial("n_corr_of_subj", n = n_trl_of_subj, p = theta, observed = n_corr_of_subj, shape = n_subj)
 
 #------------------------------------------------------------------------------
 # INTIALIZE THE CHAINS.
@@ -100,15 +99,16 @@ with pm.Model() as model:
 #------------------------------------------------------------------------------
 # RUN THE CHAINS.
 
-  burn_in_steps = 5000           # Number of steps to "burn-in" the samplers.
-  n_chains = 3                   # Number of chains to run.
-  num_saved_steps = 12000        # Total number of steps in chains to save.
-  thin_steps = 20                # Number of steps to "thin" (1=keep every step).
-  n_per_chain = math.ceil((num_saved_steps * thin_steps) / float(n_chains)) # Steps per chaing
-  trace = pm.sample(chains = n_chains, draws = n_per_chain, thin = thin_steps, return_inferencedata = False)
-#Slicing after the variable name can be used to burn and thin the samples.
+  PYMC3_BURN = 1000
+  burn_in_steps = 5000 - PYMC3_BURN # Number of steps to "burn-in" the samplers.
+  n_chains = 3                      # Number of chains to run.
+  num_saved_steps = 12000           # Total number of steps in chains to save.
+  thin_steps = 20                   # Number of steps to "thin" (1=keep every step).
+  n_per_chain = math.ceil((num_saved_steps * thin_steps) / float(n_chains) + burn_in_steps) # Steps per chaing
+  trace = pm.sample(chains = n_chains, draws = n_per_chain, return_inferencedata = False)
+#Slicing after the variable name can be used to BURN and THIN the samples.
 
-#>>> trace[varname, 1000:]
+#>>> trace[varname, 1000:10:]
 '''
 parameters = c("omega","kappa","omega0","theta","mdlIdx")
 adaptSteps = 1000            # Number of steps to "tune" the samplers.
